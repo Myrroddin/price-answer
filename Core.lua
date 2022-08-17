@@ -515,7 +515,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local itemKey = {}
     local itemKeyInfo
     local isCommodity
-    local C_AuctionHouse.GetItemKeyInfo = isMainline and C_AuctionHouse.GetItemKeyInfo
+    local C_AuctionHouse = isMainline and _G.C_AuctionHouse
 
     if itemID then
         itemKey.itemID = itemID
