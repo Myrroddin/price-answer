@@ -49,6 +49,7 @@ local events = {
     ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
     ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
 }
+local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
 -- main Ace3 Functions
 function PriceAnswer:OnInitialize()
@@ -510,30 +511,27 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local outgoingMessageOne = ""
     local outgoingMessageTwo = ""
 
-    --@version-retail@
+    -- mainline WoW code
     local itemKey = {}
     local itemKeyInfo
     local isCommodity
+    local C_AuctionHouse.GetItemKeyInfo = isMainline and C_AuctionHouse.GetItemKeyInfo
+
     if itemID then
         itemKey.itemID = itemID
         itemKey.itemLevel = 0 -- dummy entry
         itemKey.itemSuffix = 0 -- dummy entry
         itemKey.battlePetSpeciesID = 0 -- dummy entry
 
-        itemKeyInfo = C_AuctionHouse.GetItemKeyInfo(itemKey)
-        isCommodity = itemKeyInfo.isCommodity
+        itemKeyInfo = isMainline and C_AuctionHouse.GetItemKeyInfo(itemKey)
+        isCommodity = isMainline and itemKeyInfo.isCommodity
     end
-    --@end-version-retail@
+    -- end mainline WoW code
 
     if db.tsmSources["dbmarket"] then
         if dbmarketString then
             outgoingMessageOne = L["Market"] .. " " .. dbmarketString
         end
-        --@version-retail@
-        if isCommodity then
-            outgoingMessageOne = ""
-        end
-        --@end-version-retail@
     end
 
     if db.tsmSources["dbminbuyout"] then
@@ -546,22 +544,23 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
         if dbhistoricalString then
             outgoingMessageOne = outgoingMessageOne .. " " .. L["Historical"] .. " " .. dbhistoricalString
         end
-        --@version-retail@
-        if isCommodity then
-            outgoingMessageOne = ""
-        end
-        --@end-version-retail@
     end
 
     if db.tsmSources["dbregionmarketavg"] then
         if dbregionmarketavgString then
             outgoingMessageTwo =  L["Region"] .. " " .. dbregionmarketavgString
         end
+        if isCommodity then
+            outgoingMessageTwo = ""
+        end
     end
 
     if db.tsmSources["dbregionhistorical"] then
         if dbregionhistoricalString then
             outgoingMessageTwo = outgoingMessageTwo .. " " .. L["Region Historical"] .. " " .. dbregionhistoricalString
+        end
+        if isCommodity then
+            outgoingMessageTwo = ""
         end
     end
 
