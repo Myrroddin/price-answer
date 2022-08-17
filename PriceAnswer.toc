@@ -1,0 +1,61 @@
+## Interface: 90207
+## Interface-Clasic: 11403
+## Interface-BBC: 20504
+## Title: Price Answer
+## Notes: Responds to chat messages containing an item with the item's prices
+## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
+## Notes-esES: @localization(locale="esES", key="Notes", namespace="ToC")@
+## Notes-esMX: @localization(locale="esMX", key="Notes", namespace="ToC")@
+## Notes-frFR: @localization(locale="frFR", key="Notes", namespace="ToC")@
+## Notes-itIT: @localization(locale="itIT", key="Notes", namespace="ToC")@
+## Notes-koKR: @localization(locale="koKR", key="Notes", namespace="ToC")@
+## Notes-ptBR: @localization(locale="ptBR", key="Notes", namespace="ToC")@
+## Notes-ruRU: @localization(locale="ruRU", key="Notes", namespace="ToC")@
+## Notes-zhCN: @localization(locale="zhCN", key="Notes", namespace="ToC")@
+## Notes-zhTW: @localization(locale="zhTW", key="Notes", namespace="ToC")@
+## Author: Sygon
+## X-Author-Guild: Crimson Embers
+## X-Author-Faction: Alliance
+## X-Author-Server: Lightbringer
+## Version: @project-version@
+
+## X-License: Copyright (c) 2022 Paul Vandersypen All Rights Rserved
+## X-Localizations: enUS, deDE, esMX, esES, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
+## X-Category: Chat & Communication
+
+## X-Date: @project-date-iso@
+## X-Curse-Project-ID: 661710
+## X-WoWI-ID: 26382
+## X-Wago-ID: lQNlxYNe
+
+## RequiredDeps: TradeSkillMaster
+## OptionalDeps: LibStub, CallbackHandler-1.0, Ace3, LibAboutPanel-2.0
+
+## SavedVariables: PriceAnswerDB
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libs\AceAddon-3.0\AceAddon-3.0.xml
+Libs\AceEvent-3.0\AceEvent-3.0.xml
+Libs\AceDB-3.0\AceDB-3.0.xml
+Libs\AceDBOptions-3.0\AceDBOptions-3.0.xml
+Libs\AceConsole-3.0\AceConsole-3.0.xml
+Libs\AceGUI-3.0\AceGUI-3.0.xml
+Libs\AceConfig-3.0\AceConfig-3.0.xml
+Libs\AceLocale-3.0\AceLocale-3.0.xml
+Libs\LibAboutPanel-2.0\lib.xml
+
+Locales\enUS.lua
+Locales\deDE.lua
+Locales\esES.lua
+Locales\esMX.lua
+Locales\frFR.lua
+Locales\itIT.lua
+Locales\koKR.lua
+Locales\ptBR.lua
+Locales\ruRU.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
+
+Core.lua
+Options.lua
