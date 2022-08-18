@@ -49,7 +49,6 @@ local events = {
     ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
     ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
 }
-local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
 -- main Ace3 Functions
 function PriceAnswer:OnInitialize()
@@ -511,23 +510,6 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local outgoingMessageOne = ""
     local outgoingMessageTwo = ""
 
-    -- mainline WoW code
-    local itemKey = {}
-    local itemKeyInfo
-    local isCommodity
-    local C_AuctionHouse = isMainline and _G.C_AuctionHouse
-
-    if itemID then
-        itemKey.itemID = itemID
-        itemKey.itemLevel = 0 -- dummy entry
-        itemKey.itemSuffix = 0 -- dummy entry
-        itemKey.battlePetSpeciesID = 0 -- dummy entry
-
-        itemKeyInfo = isMainline and C_AuctionHouse.GetItemKeyInfo(itemKey)
-        isCommodity = isMainline and itemKeyInfo.isCommodity
-    end
-    -- end mainline WoW code
-
     if db.tsmSources["dbmarket"] then
         if dbmarketString then
             outgoingMessageOne = L["Market"] .. " " .. dbmarketString
@@ -550,17 +532,11 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
         if dbregionmarketavgString then
             outgoingMessageTwo =  L["Region"] .. " " .. dbregionmarketavgString
         end
-        if isCommodity then
-            outgoingMessageTwo = ""
-        end
     end
 
     if db.tsmSources["dbregionhistorical"] then
         if dbregionhistoricalString then
             outgoingMessageTwo = outgoingMessageTwo .. " " .. L["Region Historical"] .. " " .. dbregionhistoricalString
-        end
-        if isCommodity then
-            outgoingMessageTwo = ""
         end
     end
 
