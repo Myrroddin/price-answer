@@ -346,7 +346,7 @@ function PriceAnswer:GetOptions()
                     coinsA = {
                         order = 100,
                         type = "description",
-                        name = "* " .. L["A: Sending chat messages does not allow for colour codes; {rt2} is how all coins would appear"]
+                        name = "* " .. L["A: Sending chat messages does not allow for colour codes; all coins would look the same"]
                     },
                     spacer5 = {
                         order = 105,
