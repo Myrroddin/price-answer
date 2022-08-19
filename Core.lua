@@ -249,31 +249,6 @@ function PriceAnswer:CHAT_MSG_OFFICER(event, ...)
     self:RegisterEvent(event)
 end
 
-function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
-    local incomingMessage, senderName = ...
-    if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, "WHISPER", nil, senderName)
-    end
-
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), "WHISPER", nil, senderName)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
 function PriceAnswer:CHAT_MSG_PARTY(event, ...)
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
@@ -299,6 +274,7 @@ function PriceAnswer:CHAT_MSG_PARTY(event, ...)
     self:RegisterEvent(event)
 end
 
+--@version-retail@
 function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
@@ -323,6 +299,32 @@ function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
+
+function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
+    local incomingMessage, senderName = ...
+    if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
+
+    -- stop listening to the event while we process the incoming message
+    self:UnregisterEvent(event)
+
+    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
+
+    if outgoingMessageOne ~= "" then
+        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
+    end
+
+    if outgoingMessageTwo ~= "" then
+        SendChatMessage(outgoingMessageTwo, "WHISPER", nil, senderName)
+    end
+
+    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
+        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), "WHISPER", nil, senderName)
+    end
+
+    -- we are done processing the incoming message, listen to the  event again
+    self:RegisterEvent(event)
+end
+--@end-version-retail@
 
 function PriceAnswer:CHAT_MSG_RAID(event, ...)
     local incomingMessage, senderName = ...
