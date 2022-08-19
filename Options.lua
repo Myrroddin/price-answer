@@ -2,6 +2,7 @@ local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
 local TSM_API = TSM_API
+local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 
 function PriceAnswer:GetOptions()
     local db = self.db.global
@@ -67,22 +68,25 @@ function PriceAnswer:GetOptions()
                         type = "multiselect",
                         name = L["Watched chat channels"],
                         order = 10,
-                        values = {
-                            ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
-                            ["CHAT_MSG_SAY"]                    = CHAT_MSG_SAY,
-                            ["CHAT_MSG_YELL"]                   = CHAT_MSG_YELL,
-                            ["CHAT_MSG_GUILD"]                  = CHAT_MSG_GUILD,
-                            ["CHAT_MSG_OFFICER"]                = CHAT_MSG_OFFICER,
-                            --@version-retail@
-                            ["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES,
-                            ["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT,
-                            --@end-version-retail@
-                            ["CHAT_MSG_PARTY"]                  = CHAT_MSG_PARTY,
-                            ["CHAT_MSG_RAID"]                   = CHAT_MSG_RAID,
-                            ["CHAT_MSG_WHISPER"]                = CHAT_MSG_WHISPER,
-                            ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
-                            ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
-                        },
+                        values = function()
+                            local channels = {
+                                ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
+                                ["CHAT_MSG_SAY"]                    = CHAT_MSG_SAY,
+                                ["CHAT_MSG_YELL"]                   = CHAT_MSG_YELL,
+                                ["CHAT_MSG_GUILD"]                  = CHAT_MSG_GUILD,
+                                ["CHAT_MSG_OFFICER"]                = CHAT_MSG_OFFICER,
+                                ["CHAT_MSG_PARTY"]                  = CHAT_MSG_PARTY,
+                                ["CHAT_MSG_RAID"]                   = CHAT_MSG_RAID,
+                                ["CHAT_MSG_WHISPER"]                = CHAT_MSG_WHISPER,
+                                ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
+                                ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
+                            }
+                            if isMainline then
+                                channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
+                                channels["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT
+                            end
+                            return channels
+                        end,
                         get = function(info, key_name)
                             if db.watchedChatChannels[key_name] then
                                 self:RegisterEvent(tostring(key_name))
@@ -237,7 +241,6 @@ function PriceAnswer:GetOptions()
                         get = function() return db.replyChannel.raidWarningChannel end,
                         set = function(info, value) db.replyChannel.raidWarningChannel = value end
                     },
-                    --@version-retail@
                     instanceChannel = {
                         type = "select",
                         style = "dropdown",
@@ -249,9 +252,10 @@ function PriceAnswer:GetOptions()
                             ["WHISPER"]                         = WHISPER,
                         },
                         get = function() return db.replyChannel.instanceChannel end,
-                        set = function(info, value) db.replyChannel.instanceChannel = value end
+                        set = function(info, value) db.replyChannel.instanceChannel = value end,
+                        hidden = function() return not isMainline end,
+                        disabled = function() return not isMainline end
                     }
-                    --@end-version-retail@
                 }
             },
             tsmOptionsTab = {

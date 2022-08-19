@@ -35,20 +35,23 @@ local defaults = {
 local db -- used for shorthand and for resetting the options to defaults
 
 -- local variables
+local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 local events = {
     ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
     ["CHAT_MSG_SAY"]                    = CHAT_MSG_SAY,
     ["CHAT_MSG_YELL"]                   = CHAT_MSG_YELL,
     ["CHAT_MSG_GUILD"]                  = CHAT_MSG_GUILD,
     ["CHAT_MSG_OFFICER"]                = CHAT_MSG_OFFICER,
-    ["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES,
     ["CHAT_MSG_PARTY"]                  = CHAT_MSG_PARTY,
-    ["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT,
     ["CHAT_MSG_RAID"]                   = CHAT_MSG_RAID,
     ["CHAT_MSG_WHISPER"]                = CHAT_MSG_WHISPER,
     ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
     ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
 }
+if isMainline then
+    events["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
+    events["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT
+end
 
 -- main Ace3 Functions
 function PriceAnswer:OnInitialize()
@@ -286,7 +289,6 @@ function PriceAnswer:CHAT_MSG_PARTY(event, ...)
     self:RegisterEvent(event)
 end
 
---@version-retail@
 function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
     
@@ -340,7 +342,6 @@ function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
---@end-version-retail@
 
 function PriceAnswer:CHAT_MSG_RAID(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
