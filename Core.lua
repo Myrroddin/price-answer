@@ -123,6 +123,8 @@ end)
 
 -- chat messages event handlers
 function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
     local zoneChannelID = select(7, ...)
@@ -150,6 +152,8 @@ function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_SAY(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -175,6 +179,8 @@ function PriceAnswer:CHAT_MSG_SAY(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_YELL(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -200,6 +206,8 @@ function PriceAnswer:CHAT_MSG_YELL(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_GUILD(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -225,6 +233,8 @@ function PriceAnswer:CHAT_MSG_GUILD(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_OFFICER(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -250,6 +260,8 @@ function PriceAnswer:CHAT_MSG_OFFICER(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_PARTY(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -276,6 +288,8 @@ end
 
 --@version-retail@
 function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -301,6 +315,8 @@ function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -327,6 +343,8 @@ end
 --@end-version-retail@
 
 function PriceAnswer:CHAT_MSG_RAID(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -352,6 +370,8 @@ function PriceAnswer:CHAT_MSG_RAID(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_RAID_WARNING(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -377,6 +397,8 @@ function PriceAnswer:CHAT_MSG_RAID_WARNING(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_WHISPER(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -403,6 +425,8 @@ function PriceAnswer:CHAT_MSG_WHISPER(event, ...)
 end
 
 function PriceAnswer:CHAT_MSG_BN_WHISPER(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+    
     local incomingMessage = ...
     local bnSenderID = select(13, ...)
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
