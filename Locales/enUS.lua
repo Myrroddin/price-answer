@@ -4,7 +4,7 @@ flag = false
 --@end-debug@
 local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, flag)
 
-L["A: AddOns are not permitted to send messages to community channels; whispering is the sender is the only option"] = true
+L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"] = true
 L["A: At least one of your same-faction, same-realm characters must know the recipe"] = true
 L["A: No, which is the point. You need TradeSkillMaster for Price Answer to work"] = true
 L["A: Sending chat messages does not allow for colour codes; all coins would look the same"] = true

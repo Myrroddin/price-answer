@@ -324,7 +324,7 @@ function PriceAnswer:GetOptions()
                     communitiesA = {
                         order = 60,
                         type = "description",
-                        name = "* " .. L["A: AddOns are not permitted to send messages to community channels; whispering is the sender is the only option"]
+                        name = "* " .. L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"]
                     },
                     spacer3 = {
                         order = 65,
