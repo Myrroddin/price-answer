@@ -141,7 +141,7 @@ function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
     end
 
     if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName))
+        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
     end
 
     if outgoingMessageOne == "" and outgoingMessageTwo == "" then
