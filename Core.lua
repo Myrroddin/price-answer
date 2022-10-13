@@ -130,8 +130,6 @@ function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
     
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
-    local zoneChannelID = select(7, ...)
-    local channel = db.replyChannel.globalChannels == "GLOBAL_CHANNELS" and "CHANNEL" or "WHISPER"
 
     -- stop listening to the event while we process the incoming message
     self:UnregisterEvent(event)
@@ -139,15 +137,15 @@ function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
     local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
 
     if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, channel, nil, channel == "WHISPER" and senderName or zoneChannelID)
+        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
     end
 
     if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, channel, nil, channel == "WHISPER" and senderName or zoneChannelID)
+        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName))
     end
 
     if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), channel, nil, channel == "WHISPER" and senderName or zoneChannelID)
+        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), "WHISPER", nil, senderName)
     end
 
     -- we are done processing the incoming message, listen to the  event again

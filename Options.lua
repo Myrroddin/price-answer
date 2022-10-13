@@ -136,25 +136,12 @@ function PriceAnswer:GetOptions()
                 type = "group",
                 name = L["Outgoing messages"],
                 args = {
-                    globalChannels = {
-                        type = "select",
-                        style = "dropdown",
-                        name = GLOBAL_CHANNELS,
-                        desc = L["How do you want to answer this channel"],
-                        order = 10,
-                        values = {
-                            ["WHISPER"]                         = WHISPER,
-                            ["GLOBAL_CHANNELS"]                 = GLOBAL_CHANNELS,
-                        },
-                        get = function() return db.replyChannel.globalChannels end,
-                        set = function(info, value) db.replyChannel.globalChannels = value end
-                    },
                     sayChannel = {
                         type = "select",
                         style = "dropdown",
                         name = SAY,
                         desc = L["How do you want to answer this channel"],
-                        order = 20,
+                        order = 10,
                         values = {
                             ["WHISPER"]                         = WHISPER,
                             ["SAY"]                             = SAY,
@@ -167,7 +154,7 @@ function PriceAnswer:GetOptions()
                         style = "dropdown",
                         name = YELL,
                         desc = L["How do you want to answer this channel"],
-                        order = 30,
+                        order = 20,
                         values = {
                             ["WHISPER"]                         = WHISPER,
                             ["YELL"]                            = YELL,
@@ -180,7 +167,7 @@ function PriceAnswer:GetOptions()
                         style = "dropdown",
                         name = GUILD,
                         desc = L["How do you want to answer this channel"],
-                        order = 40,
+                        order = 30,
                         values = {
                             ["GUILD"]                           = GUILD,
                             ["WHISPER"]                         = WHISPER,
@@ -193,7 +180,7 @@ function PriceAnswer:GetOptions()
                         style = "dropdown",
                         name = OFFICER,
                         desc = L["How do you want to answer this channel"],
-                        order = 50,
+                        order = 40,
                         values = {
                             ["OFFICER"]                     = OFFICER,
                             ["WHISPER"]                     = WHISPER,
@@ -206,7 +193,7 @@ function PriceAnswer:GetOptions()
                         style = "dropdown",
                         name = PARTY,
                         desc = L["How do you want to answer this channel"],
-                        order = 60,
+                        order = 50,
                         values = {
                             ["PARTY"]                           = PARTY,
                             ["WHISPER"]                         = WHISPER,
@@ -219,7 +206,7 @@ function PriceAnswer:GetOptions()
                         style = "dropdown",
                         name = RAID,
                         desc = L["How do you want to answer this channel"],
-                        order = 70,
+                        order = 60,
                         values = {
                             ["RAID"]                            = RAID,
                             ["WHISPER"]                         = WHISPER,
@@ -232,7 +219,7 @@ function PriceAnswer:GetOptions()
                         style = "dropdown",
                         name = RAID_WARNING,
                         desc = L["How do you want to answer this channel"],
-                        order = 80,
+                        order = 70,
                         values = {
                             ["RAID"]                            = RAID,
                             ["WHISPER"]                         = WHISPER,
@@ -246,7 +233,7 @@ function PriceAnswer:GetOptions()
                         style = "dropdown",
                         name = INSTANCE,
                         desc = L["How do you want to answer this channel"],
-                        order = 90,
+                        order = 80,
                         values = {
                             ["INSTANCE"]                        = INSTANCE,
                             ["WHISPER"]                         = WHISPER,
