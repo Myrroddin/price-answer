@@ -1,6 +1,5 @@
 ## Interface: 100000
 ## Interface-Classic: 11403
-## Interface-BCC: 20504
 ## Interface-Wrath: 30400
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
