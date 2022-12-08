@@ -33,6 +33,7 @@ L["Q: The item can be crafted, but I'm not sending crafting costs?"] = true
 L["Q: What happens if I toggle off all TradeSkillMaster prices?"] = true
 L["Q: Where is the option to send messages to community chat?"] = true
 L["Q: Why isn't this addon built into TradeSkillMaster?"] = true
+L["Recent"] = true
 L["Region"] = true
 L["Region Historical"] = true
 L["s"] = true

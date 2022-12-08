@@ -262,6 +262,7 @@ function PriceAnswer:GetOptions()
                             ["dbhistorical"]                    = TSM_API.GetPriceSourceDescription("dbhistorical"),
                             ["dbregionhistorical"]              = TSM_API.GetPriceSourceDescription("dbregionhistorical"),
                             ["crafting"]                        = TSM_API.GetPriceSourceDescription("crafting"),
+                            ["dbrecent"]                        = TSM_API.GetPriceSourceDescription("dbrecent"),
                         },
                         get = function(info, key_name) return db.tsmSources[key_name] end,
                         set = function(info, key_name, value) db.tsmSources[key_name] = value end

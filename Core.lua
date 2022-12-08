@@ -521,6 +521,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local dbhistoricalCopper = self:GetItemValue("dbhistorical", itemString, itemCount)
     local dbregionhistoricalCopper = self:GetItemValue("dbregionhistorical", itemString, itemCount)
     local destroyCopper = self:GetItemValue("destroy", itemString, itemCount)
+    local dbrecentCopper = self:GetItemValue("dbrecent", itemString, itemCount)
 
     -- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
     local craftingString = self:ConvertToHumanReadable(craftingCopper)
@@ -530,6 +531,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local dbhistoricalString = self:ConvertToHumanReadable(dbhistoricalCopper)
     local dbregionhistoricalString = self:ConvertToHumanReadable(dbregionhistoricalCopper)
     local destroyString = self:ConvertToHumanReadable(destroyCopper)
+    local dbrecentString = self:ConvertToHumanReadable(dbrecentCopper)
 
     -- build the outgoing message
     local outgoingMessageOne = ""
@@ -544,6 +546,12 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     if db.tsmSources["dbminbuyout"] then
         if dbminbuyoutString then
             outgoingMessageOne = outgoingMessageOne .. " " .. MINIMUM .. " " .. dbminbuyoutString
+        end
+    end
+
+    if db.tsmSources["dbrecent"] then
+        if dbrecentString then
+            outgoingMessageOne = outgoingMessageOne .. " " .. L["Recent"] .. " " .. dbrecentString
         end
     end
 
