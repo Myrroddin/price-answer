@@ -13,6 +13,21 @@
         "CHAT_MSG_BN_WHISPER",
         "CLUB_FINDER_COMMUNITIES",
         "GLOBAL_CHANNELS",
-        "HELP_LABEL"
+        "HELP_LABEL",
+        "CHAT_MSG_RAID_WARNING",
+        "MINIMUM",
+        "ENABLE",
+        "SAY",
+        "YELL",
+        "GUILD",
+        "OFFICER",
+        "PARTY",
+        "RAID",
+        "RAID_WARNING",
+        "INSTANCE",
+        "WHISPER"
+    ],
+    "Lua.diagnostics.disable": [
+        "param-type-mismatch"
     ]
 }
