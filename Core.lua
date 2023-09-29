@@ -2,9 +2,9 @@ assert(TSM_API, "TradeSkillMaster is missing, please enable", 2)
 local addon_folder, pt = ... -- pt is not used
 
 -- upvalue globals
-local _G = _G
-local LibStub = _G.LibStub
-local TSM_API = _G.TSM_API
+local LibStub = LibStub
+local TSM_API = TSM_API
+local pairs = pairs
 
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon(addon_folder, "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
@@ -35,6 +35,7 @@ local defaults = {
 local db -- used for shorthand and for resetting the options to defaults
 
 -- local variables
+local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC -- not Wrath or retail
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 local events = {
     ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
@@ -87,7 +88,7 @@ function PriceAnswer:OnInitialize()
 end
 
 function PriceAnswer:OnEnable()
-    for event, value in pairs(events) do
+    for event in pairs(events) do
         if db.watchedChatChannels[event] then
             self:RegisterEvent(event)
         else
@@ -97,7 +98,7 @@ function PriceAnswer:OnEnable()
 end
 
 function PriceAnswer:OnDisable()
-    for event, value in pairs(events) do
+    for event in pairs(events) do
         self:UnregisterEvent(event)
     end
 end
@@ -127,7 +128,7 @@ end)
 -- chat messages event handlers
 function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -181,7 +182,7 @@ end
 
 function PriceAnswer:CHAT_MSG_YELL(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -208,7 +209,7 @@ end
 
 function PriceAnswer:CHAT_MSG_GUILD(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -235,7 +236,7 @@ end
 
 function PriceAnswer:CHAT_MSG_OFFICER(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -262,7 +263,7 @@ end
 
 function PriceAnswer:CHAT_MSG_PARTY(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -289,7 +290,7 @@ end
 
 function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -316,7 +317,7 @@ end
 
 function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -343,7 +344,7 @@ end
 
 function PriceAnswer:CHAT_MSG_RAID(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -370,7 +371,7 @@ end
 
 function PriceAnswer:CHAT_MSG_RAID_WARNING(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -397,12 +398,12 @@ end
 
 function PriceAnswer:CHAT_MSG_WHISPER(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
     if PriceAnswerSentMessages[incomingMessage] then return end
-    
+
     -- stop listening to the event while we process the incoming message
     self:UnregisterEvent(event)
 
@@ -425,7 +426,7 @@ end
 
 function PriceAnswer:CHAT_MSG_BN_WHISPER(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage = ...
     local bnSenderID = select(13, ...)
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
@@ -612,7 +613,7 @@ end
 function PriceAnswer:ConvertToHumanReadable(num_copper)
     local gold_string, silver_string, copper_string = "", "", ""
     local gold, silver, copper
-    
+
     if num_copper > 0 then
         gold = floor(num_copper / 10000)
         silver = (num_copper / 100) % 100
