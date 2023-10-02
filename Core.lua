@@ -155,7 +155,7 @@ end
 
 function PriceAnswer:CHAT_MSG_SAY(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
-    
+
     local incomingMessage, senderName = ...
     if not incomingMessage:find(("^%s%%s"):format(L[db.trigger]:gsub("(%W)", "%%%1"))) then return end
 
@@ -516,22 +516,34 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
     -- get values in copper coins
     local craftingCopper = self:GetItemValue("crafting", itemString, itemCount)
+    local destroyCopper = self:GetItemValue("destroy", itemString, itemCount)
     local dbminbuyoutCopper = self:GetItemValue("dbminbuyout", itemString, itemCount)
     local dbmarketCopper = self:GetItemValue("dbmarket", itemString, itemCount)
     local dbregionmarketavgCopper = self:GetItemValue("dbregionmarketavg", itemString, itemCount)
     local dbhistoricalCopper = self:GetItemValue("dbhistorical", itemString, itemCount)
     local dbregionhistoricalCopper = self:GetItemValue("dbregionhistorical", itemString, itemCount)
-    local destroyCopper = self:GetItemValue("destroy", itemString, itemCount)
     local dbrecentCopper = self:GetItemValue("dbrecent", itemString, itemCount)
+
+    -- Classic Era depends on external addon manual user scans of the auction house to get data
+    if isClassicEra then
+        -- min buyout
+        dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount) or dbminbuyoutCopper
+
+        -- market value
+        dbmarketCopper = self:GetItemValue("aucmarket", itemString, itemCount) or dbmarketCopper
+
+        -- historical value
+        dbhistoricalCopper = self:GetItemValue("aucappraiser", itemString, itemCount) or dbhistoricalCopper
+    end
 
     -- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
     local craftingString = self:ConvertToHumanReadable(craftingCopper)
+    local destroyString = self:ConvertToHumanReadable(destroyCopper)
     local dbminbuyoutString = self:ConvertToHumanReadable(dbminbuyoutCopper)
     local dbmarketString = self:ConvertToHumanReadable(dbmarketCopper)
     local dbregionmarketavgString = self:ConvertToHumanReadable(dbregionmarketavgCopper)
     local dbhistoricalString = self:ConvertToHumanReadable(dbhistoricalCopper)
     local dbregionhistoricalString = self:ConvertToHumanReadable(dbregionhistoricalCopper)
-    local destroyString = self:ConvertToHumanReadable(destroyCopper)
     local dbrecentString = self:ConvertToHumanReadable(dbrecentCopper)
 
     -- build the outgoing message
