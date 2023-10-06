@@ -4,8 +4,6 @@ flag = true
 --@end-debug@
 local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, flag)
 
---@localization(locale="enUS", format="lua_additve_tabe", same-key-is-true=true)
---@debug@
 L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"] = true
 L["A: At least one of your same-faction, same-realm characters must know the recipe"] = true
 L["A: No, which is the point. You need TradeSkillMaster for Price Answer to work"] = true
@@ -45,4 +43,3 @@ L["TSM price sources"] = true
 L["Turns 9999g into 9,999g"] = true
 L["Watched chat channels"] = true
 L["You must enable at least one watched chat channel"] = true
---@end-debug@
