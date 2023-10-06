@@ -124,7 +124,6 @@ function PriceAnswer:GetOptions()
                                 self:Print(L["The trigger must be one or more non-space characters, a word, or a phrase (can contain spaces between words in the phrase)"])
                                 return false
                             end
-                            
                         end,
                         get = function() return db.trigger end,
                         set = function(info, value) db.trigger = value:trim() end

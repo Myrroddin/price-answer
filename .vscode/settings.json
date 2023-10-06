@@ -25,7 +25,20 @@
         "RAID",
         "RAID_WARNING",
         "INSTANCE",
-        "WHISPER"
+        "WHISPER",
+        "RecentTimeDate",
+        "NONE",
+        "NEVER",
+        "COPPER_AMOUNT_SYMBOL",
+        "SILVER_AMOUNT_SYMBOL",
+        "GOLD_AMOUNT_SYMBOL",
+        "COPPER_AMOUNT_TEXTURE",
+        "SILVER_AMOUNT_TEXTURE",
+        "GOLD_AMOUNT_TEXTURE_STRING",
+        "SEARCH",
+        "SHOW",
+        "HIDE",
+        "GO"
     ],
     "Lua.diagnostics.disable": [
         "param-type-mismatch"

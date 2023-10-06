@@ -626,7 +626,7 @@ function PriceAnswer:ConvertToHumanReadable(num_copper)
     local gold_string, silver_string, copper_string = "", "", ""
     local gold, silver, copper
 
-    if num_copper > 0 then
+    if num_copper and num_copper >= 1 then
         gold = floor(num_copper / 10000)
         silver = (num_copper / 100) % 100
         copper = num_copper % 100
@@ -634,16 +634,16 @@ function PriceAnswer:ConvertToHumanReadable(num_copper)
         if gold >= 1 then
             if db.formatLargeNumbers then
                 gold = FormatLargeNumber(gold)
-                gold_string = format("%sg", gold)
+                gold_string = format("%s" .. GOLD_AMOUNT_SYMBOL, gold)
             else
-                gold_string = format("%d" .. L["g"], gold)
+                gold_string = format("%d" .. GOLD_AMOUNT_SYMBOL, gold)
             end
         end
         if silver >= 1 then
-            silver_string = format("%d" .. L["s"], silver)
+            silver_string = format("%d" .. SILVER_AMOUNT_SYMBOL, silver)
         end
         if copper >= 1 then
-            copper_string = format("%d" .. L["c"], copper)
+            copper_string = format("%d" .. COPPER_AMOUNT_SYMBOL, copper)
         end
 
         return gold_string .. silver_string .. copper_string

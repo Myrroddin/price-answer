@@ -1,9 +1,11 @@
-local flag = true
+local flag = false
 --@debug@
-flag = false
+flag = true
 --@end-debug@
 local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, flag)
 
+--@localization(locale="enUS", format="lua_additve_tabe", same-key-is-true=true)
+--@debug@
 L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"] = true
 L["A: At least one of your same-faction, same-realm characters must know the recipe"] = true
 L["A: No, which is the point. You need TradeSkillMaster for Price Answer to work"] = true
@@ -12,13 +14,11 @@ L["A: That cannot be done without breaking TradeSkillMaster"] = true
 L["A: The AddOn will process the incoming message, and erroneously tell the sender their syntax is wrong. You should leave one or more TSM prices enabled"] = true
 L["A: True, because adding a message to your chat window allows colours, whereas sending a chat message to someone else does not"] = true
 L["Any symbol, word, or phrase that triggers sending price answers"] = true
-L["c"] = true
 L["Craft"] = true
 L["Destroy"] = true
 L["Disable in combat"] = true
 L["Enables / disables the AddOn"] = true
 L["Format large gold numbers"] = true
-L["g"] = true
 L["Historical"] = true
 L["How do you want to answer this channel"] = true
 L["Incoming messages"] = true
@@ -36,7 +36,6 @@ L["Q: Why isn't this addon built into TradeSkillMaster?"] = true
 L["Recent"] = true
 L["Region"] = true
 L["Region Historical"] = true
-L["s"] = true
 L["Sources' gold values sent in the reply, if valid"] = true
 L["Stops watching chat channels while you are in combat"] = true
 L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"] = true
@@ -46,3 +45,4 @@ L["TSM price sources"] = true
 L["Turns 9999g into 9,999g"] = true
 L["Watched chat channels"] = true
 L["You must enable at least one watched chat channel"] = true
+--@end-debug@
