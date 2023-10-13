@@ -11,6 +11,7 @@ L["A: Sending chat messages does not allow for colour codes; all coins would loo
 L["A: That cannot be done without breaking TradeSkillMaster"] = true
 L["A: The AddOn will process the incoming message, and erroneously tell the sender their syntax is wrong. You should leave one or more TSM prices enabled"] = true
 L["A: True, because adding a message to your chat window allows colours, whereas sending a chat message to someone else does not"] = true
+L["Alternatively, the item has no price data"] = true
 L["Any symbol, word, or phrase that triggers sending price answers"] = true
 L["Craft"] = true
 L["Destroy"] = true

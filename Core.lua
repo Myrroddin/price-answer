@@ -146,10 +146,6 @@ function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
         SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
     end
 
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), "WHISPER", nil, senderName)
-    end
-
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
@@ -172,10 +168,6 @@ function PriceAnswer:CHAT_MSG_SAY(event, ...)
 
     if outgoingMessageTwo ~= "" then
         SendChatMessage(outgoingMessageTwo, db.replyChannel.sayChannel, nil, db.replyChannel.sayChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.sayChannel, nil, db.replyChannel.sayChannel == "WHISPER" and senderName or nil)
     end
 
     -- we are done processing the incoming message, listen to the  event again
@@ -202,10 +194,6 @@ function PriceAnswer:CHAT_MSG_YELL(event, ...)
         SendChatMessage(outgoingMessageTwo, db.replyChannel.yellChannel, nil, db.replyChannel.yellChannel == "WHISPER" and senderName or nil)
     end
 
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.yellChannel, nil, db.replyChannel.yellChannel == "WHISPER" and senderName or nil)
-    end
-
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
@@ -228,10 +216,6 @@ function PriceAnswer:CHAT_MSG_GUILD(event, ...)
 
     if outgoingMessageTwo ~= "" then
         SendChatMessage(outgoingMessageTwo, db.replyChannel.guildChannel, nil, db.replyChannel.guildChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.guildChannel, nil, db.replyChannel.guildChannel == "WHISPER" and senderName or nil)
     end
 
     -- we are done processing the incoming message, listen to the  event again
@@ -258,10 +242,6 @@ function PriceAnswer:CHAT_MSG_OFFICER(event, ...)
         SendChatMessage(outgoingMessageTwo, db.replyChannel.officerChannel, nil, db.replyChannel.officerChannel == "WHISPER" and senderName or nil)
     end
 
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.officerChannel, nil, db.replyChannel.officerChannel == "WHISPER" and senderName or nil)
-    end
-
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
@@ -284,10 +264,6 @@ function PriceAnswer:CHAT_MSG_PARTY(event, ...)
 
     if outgoingMessageTwo ~= "" then
         SendChatMessage(outgoingMessageTwo, db.replyChannel.partyChannel, nil, db.replyChannel.partyChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.partyChannel, nil, db.replyChannel.partyChannel == "WHISPER" and senderName or nil)
     end
 
     -- we are done processing the incoming message, listen to the  event again
@@ -314,10 +290,6 @@ function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
         SendChatMessage(outgoingMessageTwo, db.replyChannel.instanceChannel, nil, db.replyChannel.instanceChannel == "WHISPER" and senderName or nil)
     end
 
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.instanceChannel, nil, db.replyChannel.instanceChannel == "WHISPER" and senderName or nil)
-    end
-
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
@@ -340,10 +312,6 @@ function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
 
     if outgoingMessageTwo ~= "" then
         SendChatMessage(outgoingMessageTwo, "WHISPER", nil, senderName)
-    end
-
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), "WHISPER", nil, senderName)
     end
 
     -- we are done processing the incoming message, listen to the  event again
@@ -370,10 +338,6 @@ function PriceAnswer:CHAT_MSG_RAID(event, ...)
         SendChatMessage(outgoingMessageTwo, db.replyChannel.raidChannel, nil, db.replyChannel.raidChannel == "WHISPER" and senderName or nil)
     end
 
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.raidChannel, nil, db.replyChannel.raidChannel == "WHISPER" and senderName or nil)
-    end
-
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
@@ -396,10 +360,6 @@ function PriceAnswer:CHAT_MSG_RAID_WARNING(event, ...)
 
     if outgoingMessageTwo ~= "" then
         SendChatMessage(outgoingMessageTwo, db.replyChannel.raidWarningChannel, nil, db.replyChannel.raidWarningChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), db.replyChannel.raidWarningChannel, nil, db.replyChannel.raidWarningChannel == "WHISPER" and senderName or nil)
     end
 
     -- we are done processing the incoming message, listen to the  event again
@@ -428,10 +388,6 @@ function PriceAnswer:CHAT_MSG_WHISPER(event, ...)
         SendChatMessage(outgoingMessageTwo, "WHISPER", nil, senderName, nil, nil, nil, true)
     end
 
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        SendChatMessage(format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]), "WHISPER", nil, senderName, nil, nil, nil, true)
-    end
-
     -- we are done processing the incoming message, listen to the  event again
     self:RegisterEvent(event)
 end
@@ -456,10 +412,6 @@ function PriceAnswer:CHAT_MSG_BN_WHISPER(event, ...)
 
     if outgoingMessageTwo ~= "" then
         BNSendWhisper(bnSenderID, outgoingMessageTwo)
-    end
-
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        BNSendWhisper(bnSenderID, format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger]))
     end
 
     -- we are done processing the incoming message, listen to the  event again
@@ -565,8 +517,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local dbrecentString = self:ConvertToHumanReadable(dbrecentCopper)
 
     -- build the outgoing message
-    local outgoingMessageOne = ""
-    local outgoingMessageTwo = ""
+    local outgoingMessageOne, outgoingMessageTwo = "", ""
 
     if db.tsmSources["dbmarket"] then
         if dbmarketString then
@@ -616,8 +567,15 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
         end
     end
 
+    -- trim dead spaces
     outgoingMessageOne = outgoingMessageOne:trim()
     outgoingMessageTwo = outgoingMessageTwo:trim()
+
+    -- if the incoming syntax is wrong or the item has no price data, then reply with those instead of price information
+    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
+        outgoingMessageOne = format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger])
+        outgoingMessageTwo = L["Alternatively, the item has no price data"]
+    end
 
     return outgoingMessageOne, outgoingMessageTwo
 end
