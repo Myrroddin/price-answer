@@ -1,6 +1,6 @@
 ## Interface: 100107
 ## Interface-Classic: 11404
-## Interface-Wrath: 30402
+## Interface-Wrath: 30403
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
 ## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
