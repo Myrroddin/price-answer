@@ -1,6 +1,6 @@
-local flag = false
+local flag = true
 --@debug@
-flag = true
+flag = false
 --@end-debug@
 local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, flag)
 
