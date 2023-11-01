@@ -1,5 +1,5 @@
 assert(TSM_API, "TradeSkillMaster is missing, please enable", 2)
-local addon_folder, pt = ... -- pt is not used
+local addon_folder = ... -- pt is not used
 
 -- upvalue globals
 local LibStub = LibStub
@@ -10,11 +10,10 @@ local pairs = pairs
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon(addon_folder, "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
 local L = LibStub("AceLocale-3.0"):GetLocale(addon_folder)
 local Dialog = LibStub("AceConfigDialog-3.0")
-local Command = LibStub("AceConfigCmd-3.0")
 
 -- defaults for options
 local defaults = {
-    global = {
+    profile = {
         enableAddOn = true,
         disableInCombat = true,
         formatLargeNumbers = true,
@@ -61,7 +60,7 @@ function PriceAnswer:OnInitialize()
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
     self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
     self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
-    db = self.db.global
+    db = self.db.profile
 
     -- set enabled/disabled state as per user prefs
     self:SetEnabledState(db.enableAddOn)
@@ -107,7 +106,7 @@ end
 
 -- reset the SV database
 function PriceAnswer:RefreshConfig()
-    db = self.db.global
+    db = self.db.profile
 end
 
 -- handle slash commands
