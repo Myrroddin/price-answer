@@ -54,13 +54,23 @@ function PriceAnswer:GetOptions()
                 get = function() return db.formatLargeNumbers end,
                 set = function(info, value) db.formatLargeNumbers = value end
             },
-            lineBreak2 = {
+            issueInstructions = {
                 order = 50,
+                name = L["Issue instructions"],
+                desc = L["Send a message with instructions when the reply string is empty"],
+                descStyle = "inline",
+                width = 1.5,
+                type = "toggle",
+                get = function() return db.issueInstructions end,
+                set = function(info, value) db.issueInstructions = value end
+            },
+            lineBreak2 = {
+                order = 60,
                 type = "header",
-                name = "",
+                name = ""
             },
             incomingMessagesTab = {
-                order = 60,
+                order = 70,
                 name = L["Incoming messages"],
                 type = "group",
                 args = {
@@ -79,7 +89,7 @@ function PriceAnswer:GetOptions()
                                 ["CHAT_MSG_RAID"]                   = CHAT_MSG_RAID,
                                 ["CHAT_MSG_WHISPER"]                = CHAT_MSG_WHISPER,
                                 ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
-                                ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
+                                ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING
                             }
                             if isMainline then
                                 channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
@@ -107,7 +117,7 @@ function PriceAnswer:GetOptions()
                     lineBreak3 = {
                         order = 20,
                         type = "header",
-                        name = "",
+                        name = ""
                     },
                     trigger = {
                         type = "input",
@@ -131,7 +141,7 @@ function PriceAnswer:GetOptions()
                 }
             },
             outgoingMessagesTab = {
-                order = 70,
+                order = 80,
                 type = "group",
                 name = L["Outgoing messages"],
                 args = {
@@ -143,7 +153,7 @@ function PriceAnswer:GetOptions()
                         order = 10,
                         values = {
                             ["WHISPER"]                         = WHISPER,
-                            ["SAY"]                             = SAY,
+                            ["SAY"]                             = SAY
                         },
                         get = function()  return db.replyChannel.sayChannel end,
                         set = function(info, value) db.replyChannel.sayChannel = value end
@@ -156,7 +166,7 @@ function PriceAnswer:GetOptions()
                         order = 20,
                         values = {
                             ["WHISPER"]                         = WHISPER,
-                            ["YELL"]                            = YELL,
+                            ["YELL"]                            = YELL
                         },
                         get = function() return db.replyChannel.yellChannel end,
                         set = function(info, value) db.replyChannel.yellChannel = value end
@@ -169,7 +179,7 @@ function PriceAnswer:GetOptions()
                         order = 30,
                         values = {
                             ["GUILD"]                           = GUILD,
-                            ["WHISPER"]                         = WHISPER,
+                            ["WHISPER"]                         = WHISPER
                         },
                         get = function() return db.replyChannel.guildChannel end,
                         set = function(info, value) db.replyChannel.guildChannel = value end
@@ -182,7 +192,7 @@ function PriceAnswer:GetOptions()
                         order = 40,
                         values = {
                             ["OFFICER"]                     = OFFICER,
-                            ["WHISPER"]                     = WHISPER,
+                            ["WHISPER"]                     = WHISPER
                         },
                         get = function() return db.replyChannel.officerChannel end,
                         set = function(info, value) db.replyChannel.officerChannel = value end
@@ -195,7 +205,7 @@ function PriceAnswer:GetOptions()
                         order = 50,
                         values = {
                             ["PARTY"]                           = PARTY,
-                            ["WHISPER"]                         = WHISPER,
+                            ["WHISPER"]                         = WHISPER
                         },
                         get = function() return db.replyChannel.partyChannel end,
                         set = function(info, value) db.replyChannel.partyChannel = value end
@@ -208,7 +218,7 @@ function PriceAnswer:GetOptions()
                         order = 60,
                         values = {
                             ["RAID"]                            = RAID,
-                            ["WHISPER"]                         = WHISPER,
+                            ["WHISPER"]                         = WHISPER
                         },
                         get = function() return db.replyChannel.raidChannel end,
                         set = function(info, value) db.replyChannel.raidChannel = value end
@@ -222,7 +232,7 @@ function PriceAnswer:GetOptions()
                         values = {
                             ["RAID"]                            = RAID,
                             ["WHISPER"]                         = WHISPER,
-                            ["RAID_WARNING"]                    = RAID_WARNING,
+                            ["RAID_WARNING"]                    = RAID_WARNING
                         },
                         get = function() return db.replyChannel.raidWarningChannel end,
                         set = function(info, value) db.replyChannel.raidWarningChannel = value end
@@ -235,7 +245,7 @@ function PriceAnswer:GetOptions()
                         order = 80,
                         values = {
                             ["INSTANCE"]                        = INSTANCE,
-                            ["WHISPER"]                         = WHISPER,
+                            ["WHISPER"]                         = WHISPER
                         },
                         get = function() return db.replyChannel.instanceChannel end,
                         set = function(info, value) db.replyChannel.instanceChannel = value end,
@@ -245,7 +255,7 @@ function PriceAnswer:GetOptions()
                 }
             },
             tsmOptionsTab = {
-                order = 80,
+                order = 90,
                 name = L["TSM price sources"],
                 type = "group",
                 args = {
@@ -269,7 +279,7 @@ function PriceAnswer:GetOptions()
                 }
             },
             helpTab = {
-                order = 90,
+                order = 100,
                 name = HELP_LABEL,
                 type = "group",
                 args = {

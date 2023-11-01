@@ -18,6 +18,7 @@ local defaults = {
         enableAddOn = true,
         disableInCombat = true,
         formatLargeNumbers = true,
+        issueInstructions = true,
         trigger = "price",
         replyChannel = {
             ["*"] = "WHISPER"
@@ -69,6 +70,7 @@ function PriceAnswer:OnInitialize()
 
     -- create Profiles within the options
     options.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
+    options.args.profiles.order = 0
 
     -- LibAboutPanel-2.0 support
     options.args.aboutTable = self:AboutOptionsTable(addon_folder)
@@ -573,8 +575,10 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
     -- if the incoming syntax is wrong or the item has no price data, then reply with those instead of price information
     if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        outgoingMessageOne = format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger])
-        outgoingMessageTwo = L["Alternatively, the item has no price data"]
+        if db.issueInstructions then
+            outgoingMessageOne = format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger])
+            outgoingMessageTwo = L["Alternatively, the item has no price data"]
+        end
     end
 
     return outgoingMessageOne, outgoingMessageTwo
