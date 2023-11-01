@@ -20,10 +20,8 @@ function PriceAnswer:GetOptions()
             },
             enableAddOn = {
                 order = 20,
-                name = ENABLE,
+                name = ENABLE .. " " .. JUST_OR .. " " .. DISABLE,
                 desc = L["Enables / disables the AddOn"],
-                descStyle = "inline",
-                width = 1.5,
                 type = "toggle",
                 get = function() return db.enableAddOn end,
                 set = function(info, value)
@@ -39,8 +37,6 @@ function PriceAnswer:GetOptions()
                 order = 30,
                 name = L["Disable in combat"],
                 desc = L["Stops watching chat channels while you are in combat"],
-                descStyle = "inline",
-                width = 1.5,
                 type = "toggle",
                 get = function() return db.disableInCombat end,
                 set = function(info, value) db.disableInCombat = value end
@@ -49,8 +45,6 @@ function PriceAnswer:GetOptions()
                 order = 40,
                 name = L["Format large gold numbers"],
                 desc = L["Turns 9999g into 9,999g"],
-                descStyle = "inline",
-                width = 1.5,
                 type = "toggle",
                 get = function() return db.formatLargeNumbers end,
                 set = function(info, value) db.formatLargeNumbers = value end
@@ -59,8 +53,6 @@ function PriceAnswer:GetOptions()
                 order = 50,
                 name = L["Issue instructions"],
                 desc = L["Send a message with instructions when the reply string is empty"],
-                descStyle = "inline",
-                width = 1.5,
                 type = "toggle",
                 get = function() return db.issueInstructions end,
                 set = function(info, value) db.issueInstructions = value end

@@ -38,7 +38,9 @@
         "SEARCH",
         "SHOW",
         "HIDE",
-        "GO"
+        "GO",
+        "JUST_OR",
+        "DISABLE"
     ],
     "Lua.diagnostics.disable": [
         "param-type-mismatch"
