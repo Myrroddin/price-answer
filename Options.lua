@@ -1,3 +1,4 @@
+local GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
