@@ -6,7 +6,7 @@ local TSM_API = TSM_API
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 
 function PriceAnswer:GetOptions()
-    local db = self.db.global
+    local db = self.db.profile
     local options = {
         type = "group",
         order = 10,
