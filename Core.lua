@@ -497,14 +497,14 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
     -- Classic Era depends on external addon manual user scans of the auction house to get data
     if isClassicEra then
-        -- min buyout, provided by Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout"), or TSM ("dbminbuyout")
-        dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount) or dbminbuyoutCopper
+        -- min buyout, provided by TSM ("dbminbuyout"), Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
+        dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
 
-        -- market value, provided by Auctioneer ("aucmarket") or TSM ("dbmarket")
-        dbmarketCopper = self:GetItemValue("aucmarket", itemString, itemCount) or dbmarketCopper
+        -- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")
+        dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
 
-        -- historical value, provided by Auctioneer ("aucappraiser") or TSM ("dbhistorical")
-        dbhistoricalCopper = self:GetItemValue("aucappraiser", itemString, itemCount) or dbhistoricalCopper
+        -- historical value, provided by TSM ("dbhistorical") or Auctioneer ("aucappraiser")
+        dbhistoricalCopper = dbhistoricalCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
     end
 
     -- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
