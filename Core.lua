@@ -5,6 +5,7 @@ local addon_folder = ... -- pt is not used
 local LibStub = LibStub
 local TSM_API = TSM_API
 local pairs = pairs
+local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfo
 
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon(addon_folder, "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
@@ -35,7 +36,6 @@ local defaults = {
 local db -- used for shorthand and for resetting the options to defaults
 
 -- local variables
-local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC -- not Wrath or retail
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 local events = {
     ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
@@ -495,17 +495,14 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local dbregionhistoricalCopper = self:GetItemValue("dbregionhistorical", itemString, itemCount)
     local dbrecentCopper = self:GetItemValue("dbrecent", itemString, itemCount)
 
-    -- Classic Era depends on external addon manual user scans of the auction house to get data
-    if isClassicEra then
-        -- min buyout, provided by TSM ("dbminbuyout"), Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
-        dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+    -- min buyout, provided by TSM ("dbminbuyout"), Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
+    dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
 
-        -- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")
-        dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
+    -- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")
+    dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
 
-        -- historical value, provided by TSM ("dbhistorical") or Auctioneer ("aucappraiser")
-        dbhistoricalCopper = dbhistoricalCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
-    end
+    -- historical value, provided by TSM ("dbhistorical") or Auctioneer ("aucappraiser")
+    dbhistoricalCopper = dbhistoricalCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
 
     -- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
     local craftingString = self:ConvertToHumanReadable(craftingCopper)
