@@ -5,6 +5,7 @@ local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
 local TSM_API = TSM_API
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 
+---@class PriceAnswer: AceAddon
 function PriceAnswer:GetOptions()
     local db = self.db.profile
     local options = {
@@ -27,9 +28,9 @@ function PriceAnswer:GetOptions()
                 set = function(info, value)
                     db.enableAddOn = value
                     if value then
-                        self:OnEnable()
+                        self:Enable()
                     else
-                        self:OnDisable()
+                        self:Disable()
                     end
                 end
             },
@@ -48,14 +49,6 @@ function PriceAnswer:GetOptions()
                 type = "toggle",
                 get = function() return db.formatLargeNumbers end,
                 set = function(info, value) db.formatLargeNumbers = value end
-            },
-            issueInstructions = {
-                order = 50,
-                name = L["Issue instructions"],
-                desc = L["Send a message with instructions when the reply string is empty"],
-                type = "toggle",
-                get = function() return db.issueInstructions end,
-                set = function(info, value) db.issueInstructions = value end
             },
             lineBreak2 = {
                 order = 60,

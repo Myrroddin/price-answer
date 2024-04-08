@@ -5,8 +5,9 @@ local addon_folder = ... -- pt is not used
 local LibStub = LibStub
 local TSM_API = TSM_API
 local pairs = pairs
-local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfo
+local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant or GetItemInfo
 
+---@class PriceAnswer: AceAddon
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon(addon_folder, "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
 local L = LibStub("AceLocale-3.0"):GetLocale(addon_folder)
@@ -18,7 +19,6 @@ local defaults = {
         enableAddOn = true,
         disableInCombat = true,
         formatLargeNumbers = true,
-        issueInstructions = true,
         trigger = "price",
         replyChannel = {
             ["*"] = "WHISPER"
@@ -131,7 +131,7 @@ function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -155,7 +155,7 @@ function PriceAnswer:CHAT_MSG_SAY(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -179,7 +179,7 @@ function PriceAnswer:CHAT_MSG_YELL(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -203,7 +203,7 @@ function PriceAnswer:CHAT_MSG_GUILD(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -227,7 +227,7 @@ function PriceAnswer:CHAT_MSG_OFFICER(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -251,7 +251,7 @@ function PriceAnswer:CHAT_MSG_PARTY(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -275,7 +275,7 @@ function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -299,7 +299,7 @@ function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -323,7 +323,7 @@ function PriceAnswer:CHAT_MSG_RAID(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -347,7 +347,7 @@ function PriceAnswer:CHAT_MSG_RAID_WARNING(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- stop listening to the event while we process the incoming message
@@ -371,7 +371,7 @@ function PriceAnswer:CHAT_MSG_WHISPER(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage, senderName = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     -- prevent the user from infinitely whispering him/herself when testing
@@ -397,7 +397,7 @@ function PriceAnswer:CHAT_MSG_BN_WHISPER(event, ...)
     if db.disableInCombat and UnitAffectingCombat("player") then return end
 
     local incomingMessage = ...
-    -- this escapes the ? character but ther other magic characters could also be escaped
+    -- this escapes the ? character but the other magic characters could also be escaped
     if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
     local bnSenderID = select(13, ...)
@@ -568,14 +568,6 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     -- trim dead spaces
     outgoingMessageOne = outgoingMessageOne:trim()
     outgoingMessageTwo = outgoingMessageTwo:trim()
-
-    -- if the incoming syntax is wrong or the item has no price data, then reply with those instead of price information
-    if outgoingMessageOne == "" and outgoingMessageTwo == "" then
-        if db.issueInstructions then
-            outgoingMessageOne = format(L["Syntax: '%s N item' without quotes, N is an optional quantity, default 1, item is an item link or itemID"], L[db.trigger])
-            outgoingMessageTwo = L["Alternatively, the item has no price data"]
-        end
-    end
 
     return outgoingMessageOne, outgoingMessageTwo
 end
