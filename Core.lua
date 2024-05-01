@@ -501,7 +501,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     -- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")
     dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
 
-    -- historical value, provided by TSM ("dbhistorical") or Auctioneer ("aucappraiser")
+    -- recent value, provided by TSM ("dbrecent") or Auctioneer ("aucappraiser")
     dbrecentCopper = dbrecentCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
 
     -- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
@@ -519,7 +519,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
     if db.tsmSources["dbmarket"] then
         if dbmarketString then
-            outgoingMessageOne = L["Market"] .. " " .. dbmarketString
+            outgoingMessageOne = L["14-Day Realm Avg"] .. " " .. dbmarketString
         end
     end
 
@@ -531,37 +531,37 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
     if db.tsmSources["dbrecent"] then
         if dbrecentString then
-            outgoingMessageOne = outgoingMessageOne .. " " .. L["Recent"] .. " " .. dbrecentString
+            outgoingMessageOne = outgoingMessageOne .. " " .. L["Current DB Avg"] .. " " .. dbrecentString
         end
     end
 
     if db.tsmSources["dbhistorical"] then
         if dbhistoricalString then
-            outgoingMessageOne = outgoingMessageOne .. " " .. L["Historical"] .. " " .. dbhistoricalString
+            outgoingMessageOne = outgoingMessageOne .. " " .. L["60-Day Realm Avg"] .. " " .. dbhistoricalString
         end
     end
 
     if db.tsmSources["dbregionmarketavg"] then
         if dbregionmarketavgString then
-            outgoingMessageTwo =  L["Region"] .. " " .. dbregionmarketavgString
+            outgoingMessageTwo =  L["14-Day Region Avg"] .. " " .. dbregionmarketavgString
         end
     end
 
     if db.tsmSources["dbregionhistorical"] then
         if dbregionhistoricalString then
-            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["Region Historical"] .. " " .. dbregionhistoricalString
+            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["60- Day Region Avg"] .. " " .. dbregionhistoricalString
         end
     end
 
     if db.tsmSources["crafting"] then
         if craftingString then
-            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["Craft"] .. " " .. craftingString
+            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["Crafting Cost"] .. " " .. craftingString
         end
     end
 
     if db.tsmSources["destroy"] then
         if destroyString then
-            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["Destroy"] .. " " .. destroyString
+            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["Disenchant/Mill/Prospect Value"] .. " " .. destroyString
         end
     end
 
