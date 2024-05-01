@@ -502,7 +502,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
 
     -- historical value, provided by TSM ("dbhistorical") or Auctioneer ("aucappraiser")
-    dbhistoricalCopper = dbhistoricalCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
+    dbrecentCopper = dbrecentCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
 
     -- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
     local craftingString = self:ConvertToHumanReadable(craftingCopper)
