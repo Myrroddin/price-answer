@@ -1,14 +1,15 @@
 assert(TSM_API, "TradeSkillMaster is missing, please enable", 2)
+---@class string
 local addon_folder = ... -- pt is not used
 
 -- upvalue globals
 local LibStub = LibStub
 local TSM_API = TSM_API
 local pairs = pairs
-local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant or GetItemInfo
+local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant
 
----@class PriceAnswer: AceAddon
 -- addon creation
+---@class PriceAnswer: AceAddon, AceEvent-3.0, AceConsole-3.0
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon(addon_folder, "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
 local L = LibStub("AceLocale-3.0"):GetLocale(addon_folder)
 local Dialog = LibStub("AceConfigDialog-3.0")
@@ -110,7 +111,7 @@ function PriceAnswer:RefreshConfig()
 end
 
 -- handle slash commands
-function PriceAnswer:ChatCommand(input)
+function PriceAnswer:ChatCommand()
     if Dialog.OpenFrames[addon_folder] then
         Dialog:Close(addon_folder)
     else

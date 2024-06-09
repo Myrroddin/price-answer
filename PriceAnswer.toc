@@ -1,6 +1,4 @@
-## Interface: 100207
-## Interface-Classic: 11502
-## Interface-Cata: 40400
+## Interface: 11502, 40400, 100207
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
 ## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
