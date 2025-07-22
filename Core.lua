@@ -38,6 +38,7 @@ local db -- used for shorthand and for resetting the options to defaults
 
 -- local variables
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
+local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
 local events = {
     ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
     ["CHAT_MSG_SAY"]                    = CHAT_MSG_SAY,
@@ -50,9 +51,11 @@ local events = {
     ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
     ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
 }
+if isMists or isMainline then
+    events["CHAT_MSG_INSTANCE_CHAT"]        = CHAT_MSG_INSTANCE_CHAT
+end
 if isMainline then
-    events["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
-    events["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT
+    events["CHAT_MSG_COMMUNITIES_CHANNEL"]  = CHAT_MSG_COMMUNITIES_CHANNEL
 end
 
 -- main Ace3 Functions

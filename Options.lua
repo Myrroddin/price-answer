@@ -5,6 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
 local TSM_API = TSM_API
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
+local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
 
 function PriceAnswer:GetOptions()
     local db = self.db.profile
@@ -77,9 +78,11 @@ function PriceAnswer:GetOptions()
                                 ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
                                 ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING
                             }
+                            if isMists or isMainline then
+                                channels["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT
+                            end
                             if isMainline then
                                 channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
-                                channels["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT
                             end
                             return channels
                         end,
