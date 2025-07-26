@@ -1,4 +1,8 @@
-# Requirements
+# Description
+
+Reply to price checks automatically using TSM or an external addon's item values.
+
+## Requirements
 
 Price Answer requires **you** to have [TradeSkillMaster](https://www.tradeskillmaster.com/install) installed, but users sending you price inquiries do not need TSM.
 
