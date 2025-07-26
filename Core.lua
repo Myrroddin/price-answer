@@ -33,7 +33,8 @@ local defaults = {
 local db -- used for shorthand and for resetting the options to defaults
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria Classic
-local isFresh = C_Seasons.GetActiveSeason() >= 11 -- Fresh or Fresh Hardcore versions of Classic Era
+local isFresh = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "Classic" versions of the game
+isFresh = isFresh and isFresh >= 11 -- Fresh or Fresh Hardcore, Season 11 or later
 local playerName, PriceAnswerSentMessages = UnitFullName("player"), {} -- used to stop loop for whispers
 
 local events = {
