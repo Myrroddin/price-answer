@@ -1,5 +1,4 @@
-local GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata
----@class PriceAnswer: AceAddon
+local GetAddOnMetadata = C_AddOns.GetAddOnMetadata
 local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
@@ -26,7 +25,7 @@ function PriceAnswer:GetOptions()
                 desc = L["Enables / disables the AddOn"],
                 type = "toggle",
                 get = function() return db.enableAddOn end,
-                set = function(info, value)
+                set = function(_, value)
                     db.enableAddOn = value
                     if value then
                         self:Enable()
@@ -41,7 +40,7 @@ function PriceAnswer:GetOptions()
                 desc = L["Stops watching chat channels while you are in combat"],
                 type = "toggle",
                 get = function() return db.disableInCombat end,
-                set = function(info, value) db.disableInCombat = value end
+                set = function(_, value) db.disableInCombat = value end
             },
             formatLargeNumbers = {
                 order = 40,
@@ -49,7 +48,7 @@ function PriceAnswer:GetOptions()
                 desc = L["Turns 9999g into 9,999g"],
                 type = "toggle",
                 get = function() return db.formatLargeNumbers end,
-                set = function(info, value) db.formatLargeNumbers = value end
+                set = function(_, value) db.formatLargeNumbers = value end
             },
             lineBreak2 = {
                 order = 60,
@@ -67,39 +66,30 @@ function PriceAnswer:GetOptions()
                         order = 10,
                         values = function()
                             local channels = {
-                                ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
-                                ["CHAT_MSG_SAY"]                    = CHAT_MSG_SAY,
-                                ["CHAT_MSG_YELL"]                   = CHAT_MSG_YELL,
-                                ["CHAT_MSG_GUILD"]                  = CHAT_MSG_GUILD,
-                                ["CHAT_MSG_OFFICER"]                = CHAT_MSG_OFFICER,
-                                ["CHAT_MSG_PARTY"]                  = CHAT_MSG_PARTY,
-                                ["CHAT_MSG_RAID"]                   = CHAT_MSG_RAID,
-                                ["CHAT_MSG_WHISPER"]                = CHAT_MSG_WHISPER,
-                                ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
-                                ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING
+                                ["CHAT_MSG_CHANNEL"]                    = GLOBAL_CHANNELS,
+                                ["CHAT_MSG_SAY"]                        = SAY,
+                                ["CHAT_MSG_YELL"]                       = YELL,
+                                ["CHAT_MSG_GUILD"]                      = GUILD,
+                                ["CHAT_MSG_OFFICER"]                    = OFFICER,
+                                ["CHAT_MSG_PARTY"]                      = PARTY,
+                                ["CHAT_MSG_RAID"]                       = RAID,
+                                ["CHAT_MSG_WHISPER"]                    = WHISPER,
+                                ["CHAT_MSG_BN_WHISPER"]                 = BN_WHISPER,
+                                ["CHAT_MSG_RAID_WARNING"]               = RAID_WARNING
                             }
-                            if isMists or isMainline then
-                                channels["CHAT_MSG_INSTANCE_CHAT"]          = CHAT_MSG_INSTANCE_CHAT
-                            end
-                            if isMainline then
-                                channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
-                            end
+                            channels["CHAT_MSG_INSTANCE_CHAT"]          = isMists or isMainline and INSTANCE_CHAT or nil
+                            channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = isMainline and CLUB_FINDER_COMMUNITIES or nil
                             return channels
                         end,
-                        get = function(info, key_name)
-                            if db.watchedChatChannels[key_name] then
-                                self:RegisterEvent(tostring(key_name))
-                            else
-                                self:UnregisterEvent(tostring(key_name))
-                            end
+                        get = function(_, key_name)
                             return db.watchedChatChannels[key_name]
                         end,
-                        set = function(info, key_name, value)
+                        set = function(_, key_name, value)
                             db.watchedChatChannels[key_name] = value
                             if db.watchedChatChannels[key_name] then
-                                self:RegisterEvent(tostring(key_name))
+                                self:RegisterEvent(key_name, "HandleChatEvent")
                             else
-                                self:UnregisterEvent(tostring(key_name))
+                                self:UnregisterEvent(key_name)
                             end
                         end
                     },
@@ -114,7 +104,7 @@ function PriceAnswer:GetOptions()
                         desc = L["Any symbol, word, or phrase that triggers sending price answers"],
                         order = 30,
                         width = "full",
-                        validate = function(info, value)
+                        validate = function(_, value)
                             value = value:trim()
                             value = strlen(value) > 0 and value or nil
                             if value then
@@ -125,7 +115,7 @@ function PriceAnswer:GetOptions()
                             end
                         end,
                         get = function() return db.trigger end,
-                        set = function(info, value) db.trigger = value:trim() end
+                        set = function(_, value) db.trigger = value:trim() end
                     }
                 }
             },
@@ -141,11 +131,11 @@ function PriceAnswer:GetOptions()
                         desc = L["How do you want to answer this channel"],
                         order = 10,
                         values = {
-                            ["WHISPER"]                         = WHISPER,
-                            ["SAY"]                             = SAY
+                            ["WHISPER"]        = WHISPER,
+                            ["SAY"]            = SAY
                         },
-                        get = function()  return db.replyChannel.sayChannel end,
-                        set = function(info, value) db.replyChannel.sayChannel = value end
+                        get = function()  return db.replyChannel["CHAT_MSG_SAY"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_SAY"] = value end
                     },
                     yellChannel = {
                         type = "select",
@@ -154,11 +144,11 @@ function PriceAnswer:GetOptions()
                         desc = L["How do you want to answer this channel"],
                         order = 20,
                         values = {
-                            ["WHISPER"]                         = WHISPER,
-                            ["YELL"]                            = YELL
+                            ["WHISPER"]        = WHISPER,
+                            ["YELL"]           = YELL
                         },
-                        get = function() return db.replyChannel.yellChannel end,
-                        set = function(info, value) db.replyChannel.yellChannel = value end
+                        get = function() return db.replyChannel["CHAT_MSG_YELL"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_YELL"] = value end
                     },
                     guildChannel = {
                         type = "select",
@@ -167,11 +157,11 @@ function PriceAnswer:GetOptions()
                         desc = L["How do you want to answer this channel"],
                         order = 30,
                         values = {
-                            ["GUILD"]                           = GUILD,
-                            ["WHISPER"]                         = WHISPER
+                            ["WHISPER"]        = WHISPER,
+                            ["GUILD"]          = GUILD
                         },
-                        get = function() return db.replyChannel.guildChannel end,
-                        set = function(info, value) db.replyChannel.guildChannel = value end
+                        get = function() return db.replyChannel["CHAT_MSG_GUILD"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_GUILD"] = value end
                     },
                     officerChannel = {
                         type = "select",
@@ -180,11 +170,11 @@ function PriceAnswer:GetOptions()
                         desc = L["How do you want to answer this channel"],
                         order = 40,
                         values = {
-                            ["OFFICER"]                     = OFFICER,
-                            ["WHISPER"]                     = WHISPER
+                            ["WHISPER"]        = WHISPER,
+                            ["OFFICER"]        = OFFICER
                         },
-                        get = function() return db.replyChannel.officerChannel end,
-                        set = function(info, value) db.replyChannel.officerChannel = value end
+                        get = function() return db.replyChannel["CHAT_MSG_OFFICER"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_OFFICER"] = value end
                     },
                     partyChannel = {
                         type = "select",
@@ -193,11 +183,11 @@ function PriceAnswer:GetOptions()
                         desc = L["How do you want to answer this channel"],
                         order = 50,
                         values = {
-                            ["PARTY"]                           = PARTY,
-                            ["WHISPER"]                         = WHISPER
+                            ["WHISPER"]        = WHISPER,
+                            ["PARTY"]          = PARTY
                         },
-                        get = function() return db.replyChannel.partyChannel end,
-                        set = function(info, value) db.replyChannel.partyChannel = value end
+                        get = function() return db.replyChannel["CHAT_MSG_PARTY"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_PARTY"] = value end
                     },
                     raidChannel = {
                         type = "select",
@@ -206,11 +196,11 @@ function PriceAnswer:GetOptions()
                         desc = L["How do you want to answer this channel"],
                         order = 60,
                         values = {
-                            ["RAID"]                            = RAID,
-                            ["WHISPER"]                         = WHISPER
+                            ["WHISPER"]        = WHISPER,
+                            ["RAID"]           = RAID
                         },
-                        get = function() return db.replyChannel.raidChannel end,
-                        set = function(info, value) db.replyChannel.raidChannel = value end
+                        get = function() return db.replyChannel["CHAT_MSG_RAID"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_RAID"] = value end
                     },
                     raidWarningChannel = {
                         type = "select",
@@ -219,27 +209,27 @@ function PriceAnswer:GetOptions()
                         desc = L["How do you want to answer this channel"],
                         order = 70,
                         values = {
-                            ["RAID"]                            = RAID,
-                            ["WHISPER"]                         = WHISPER,
-                            ["RAID_WARNING"]                    = RAID_WARNING
+                            ["WHISPER"]         = WHISPER,
+                            ["RAID"]            = RAID,
+                            ["RAID_WARNING"]    = RAID_WARNING
                         },
-                        get = function() return db.replyChannel.raidWarningChannel end,
-                        set = function(info, value) db.replyChannel.raidWarningChannel = value end
+                        get = function() return db.replyChannel["CHAT_MSG_RAID_WARNING"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_RAID_WARNING"] = value end
                     },
                     instanceChannel = {
                         type = "select",
                         style = "dropdown",
-                        name = INSTANCE,
+                        name = INSTANCE_CHAT,
                         desc = L["How do you want to answer this channel"],
                         order = 80,
                         values = {
-                            ["INSTANCE"]                        = INSTANCE,
-                            ["WHISPER"]                         = WHISPER
+                            ["WHISPER"]         = WHISPER,
+                            ["INSTANCE_CHAT"]   = INSTANCE_CHAT
                         },
-                        get = function() return db.replyChannel.instanceChannel end,
-                        set = function(info, value) db.replyChannel.instanceChannel = value end,
-                        hidden = function() return not isMainline end,
-                        disabled = function() return not isMainline end
+                        get = function() return db.replyChannel["CHAT_MSG_INSTANCE_CHAT"] end,
+                        set = function(_, value) db.replyChannel["CHAT_MSG_INSTANCE_CHAT"] = value end,
+                        hidden = function() return not isMists or not isMainline end,
+                        disabled = function() return not isMists or not isMainline end
                     }
                 }
             },
@@ -253,17 +243,17 @@ function PriceAnswer:GetOptions()
                         name = L["Sources' gold values sent in the reply, if valid"],
                         order = 10,
                         values = {
-                            ["dbmarket"]                        = TSM_API.GetPriceSourceDescription("dbmarket"),
-                            ["dbminbuyout"]                     = TSM_API.GetPriceSourceDescription("dbminbuyout"),
-                            ["destroy"]                         = TSM_API.GetPriceSourceDescription("destroy"),
-                            ["dbregionmarketavg"]               = TSM_API.GetPriceSourceDescription("dbregionmarketavg"),
-                            ["dbhistorical"]                    = TSM_API.GetPriceSourceDescription("dbhistorical"),
-                            ["dbregionhistorical"]              = TSM_API.GetPriceSourceDescription("dbregionhistorical"),
-                            ["crafting"]                        = TSM_API.GetPriceSourceDescription("crafting"),
-                            ["dbrecent"]                        = TSM_API.GetPriceSourceDescription("dbrecent"),
+                            ["dbmarket"]                = TSM_API.GetPriceSourceDescription("dbmarket"),
+                            ["dbminbuyout"]             = TSM_API.GetPriceSourceDescription("dbminbuyout"),
+                            ["destroy"]                 = TSM_API.GetPriceSourceDescription("destroy"),
+                            ["dbregionmarketavg"]       = TSM_API.GetPriceSourceDescription("dbregionmarketavg"),
+                            ["dbhistorical"]            = TSM_API.GetPriceSourceDescription("dbhistorical"),
+                            ["dbregionhistorical"]      = TSM_API.GetPriceSourceDescription("dbregionhistorical"),
+                            ["crafting"]                = TSM_API.GetPriceSourceDescription("crafting"),
+                            ["dbrecent"]                = TSM_API.GetPriceSourceDescription("dbrecent")
                         },
-                        get = function(info, key_name) return db.tsmSources[key_name] end,
-                        set = function(info, key_name, value) db.tsmSources[key_name] = value end
+                        get = function(_, key_name) return db.tsmSources[key_name] end,
+                        set = function(_, key_name, value) db.tsmSources[key_name] = value end
                     }
                 }
             },
@@ -305,12 +295,16 @@ function PriceAnswer:GetOptions()
                     communitiesQ = {
                         order = 50,
                         type = "description",
-                        name = "* " .. L["Q: Where is the option to send messages to community chat?"]
+                        name = "* " .. L["Q: Where is the option to send messages to community chat?"],
+                        hidden = function() return not isMainline end,
+                        disabled = function() return not isMainline end
                     },
                     communitiesA = {
                         order = 60,
                         type = "description",
-                        name = "* " .. L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"]
+                        name = "* " .. L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"],
+                        hidden = function() return not isMainline end,
+                        disabled = function() return not isMainline end
                     },
                     spacer3 = {
                         order = 65,

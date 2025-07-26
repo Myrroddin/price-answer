@@ -40,7 +40,15 @@
         "HIDE",
         "GO",
         "JUST_OR",
-        "DISABLE"
+        "DISABLE",
+        "Settings",
+        "INSTANCE_CHAT",
+        "BN_WHISPER",
+        "DEFAULT",
+        "StaticPopupDialogs",
+        "OKAY",
+        "ACCEPT",
+        "StaticPopup_Show"
     ],
     "Lua.diagnostics.disable": [
         "param-type-mismatch"

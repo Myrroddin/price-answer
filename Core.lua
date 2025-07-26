@@ -1,18 +1,13 @@
 assert(TSM_API, "TradeSkillMaster is missing, please enable", 2)
----@class string
 local addon_folder = ... -- pt is not used
 
 -- upvalue globals
-local LibStub = LibStub
-local TSM_API = TSM_API
-local pairs = pairs
-local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant
+local LibStub, TSM_API, pairs, GetItemInfoInstant, pcall = LibStub, TSM_API, pairs, C_Item.GetItemInfoInstant, pcall
+local SendChatMessage, BNSendWhisper, wipe = C_ChatInfo.SendChatMessage or SendChatMessage, BNSendWhisper, table.wipe
 
 -- addon creation
----@class PriceAnswer: AceAddon, AceEvent-3.0, AceConsole-3.0
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon(addon_folder, "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
 local L = LibStub("AceLocale-3.0"):GetLocale(addon_folder)
-local Dialog = LibStub("AceConfigDialog-3.0")
 
 -- defaults for options
 local defaults = {
@@ -30,33 +25,31 @@ local defaults = {
         watchedChatChannels = {
             ["*"] = true
         }
-    }
+    },
+    global = {}
 }
-
--- handle user options
-local db -- used for shorthand and for resetting the options to defaults
 
 -- local variables
+local db -- used for shorthand and for resetting the options to defaults
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
-local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
+local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria Classic
+local isFresh = C_Seasons.GetActiveSeason() >= 11 -- Fresh or Fresh Hardcore versions of Classic Era
+local playerName, PriceAnswerSentMessages = UnitFullName("player"), {} -- used to stop loop for whispers
+
 local events = {
-    ["CHAT_MSG_CHANNEL"]                = GLOBAL_CHANNELS,
-    ["CHAT_MSG_SAY"]                    = CHAT_MSG_SAY,
-    ["CHAT_MSG_YELL"]                   = CHAT_MSG_YELL,
-    ["CHAT_MSG_GUILD"]                  = CHAT_MSG_GUILD,
-    ["CHAT_MSG_OFFICER"]                = CHAT_MSG_OFFICER,
-    ["CHAT_MSG_PARTY"]                  = CHAT_MSG_PARTY,
-    ["CHAT_MSG_RAID"]                   = CHAT_MSG_RAID,
-    ["CHAT_MSG_WHISPER"]                = CHAT_MSG_WHISPER,
-    ["CHAT_MSG_BN_WHISPER"]             = CHAT_MSG_BN_WHISPER,
-    ["CHAT_MSG_RAID_WARNING"]           = CHAT_MSG_RAID_WARNING,
+    ["CHAT_MSG_CHANNEL"]                = true,
+    ["CHAT_MSG_SAY"]                    = true,
+    ["CHAT_MSG_YELL"]                   = true,
+    ["CHAT_MSG_GUILD"]                  = true,
+    ["CHAT_MSG_OFFICER"]                = true,
+    ["CHAT_MSG_PARTY"]                  = true,
+    ["CHAT_MSG_RAID"]                   = true,
+    ["CHAT_MSG_WHISPER"]                = true,
+    ["CHAT_MSG_BN_WHISPER"]             = true,
+    ["CHAT_MSG_RAID_WARNING"]           = true,
+    ["CHAT_MSG_INSTANCE_CHAT"]          = isMists or isMainline,
+    ["CHAT_MSG_COMMUNITIES_CHANNEL"]    = isMainline
 }
-if isMists or isMainline then
-    events["CHAT_MSG_INSTANCE_CHAT"]        = CHAT_MSG_INSTANCE_CHAT
-end
-if isMainline then
-    events["CHAT_MSG_COMMUNITIES_CHANNEL"]  = CHAT_MSG_COMMUNITIES_CHANNEL
-end
 
 -- main Ace3 Functions
 function PriceAnswer:OnInitialize()
@@ -64,6 +57,21 @@ function PriceAnswer:OnInitialize()
     self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
     self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
     self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
+
+    -- reset the AceDB-3.0 DB on the first run, as we altered the watched chat channel SV names to match the event names
+    if not self.db.global.initialized then
+        StaticPopupDialogs["PRICEANSWER_RESET"] = {
+            text = L["Price Answer has been updated. The settings have been reset to defaults."],
+            button1 = ACCEPT,
+            timeout = 0,
+            whileDead = true,
+            hideOnEscape = true
+        }
+        StaticPopup_Show("PRICEANSWER_RESET")
+        self.db:RegisterDefaults(defaults)
+        self.db:ResetDB(DEFAULT)
+        self.db.global.initialized = true
+    end
     db = self.db.profile
 
     -- set enabled/disabled state as per user prefs
@@ -82,10 +90,7 @@ function PriceAnswer:OnInitialize()
     LibStub("AceConfig-3.0"):RegisterOptionsTable(addon_folder, options)
 
     -- register options with WoW's Interface\AddOns\ UI
-    Dialog:AddToBlizOptions(addon_folder, L["Price Answer"])
-
-    -- standalone GUI widget is too short, resize (default width: 700, height: 500)
-    -- Dialog:SetDefaultSize(addon_folder, 700, 650)
+    LibStub("AceConfigDialog-3.0"):AddToBlizOptions(addon_folder, L["Price Answer"])
 
     -- create and register slash command
     self:RegisterChatCommand("priceanswer", "ChatCommand")
@@ -94,335 +99,40 @@ end
 
 function PriceAnswer:OnEnable()
     for event in pairs(events) do
-        if db.watchedChatChannels[event] then
-            self:RegisterEvent(event)
-        else
-            self:UnregisterEvent(event)
+        if events[event] and db.watchedChatChannels[event] then
+            self:RegisterEvent(event, "HandleChatEvent")
         end
     end
 end
 
 function PriceAnswer:OnDisable()
-    for event in pairs(events) do
-        self:UnregisterEvent(event)
-    end
+    self:UnregisterAllEvents()
+    wipe(PriceAnswerSentMessages) -- clear the sent messages table
 end
 
 -- reset the SV database
-function PriceAnswer:RefreshConfig()
+function PriceAnswer:RefreshConfig(callback)
+    if callback == "OnProfileReset" then
+        self.db:ResetDB(DEFAULT)
+        self.db.global.initialized = true
+    end
     db = self.db.profile
+    wipe(PriceAnswerSentMessages) -- clear the sent messages table
 end
 
 -- handle slash commands
 function PriceAnswer:ChatCommand()
-    if Dialog.OpenFrames[addon_folder] then
-        Dialog:Close(addon_folder)
-    else
-        Dialog:Open(addon_folder)
-    end
+    Settings.OpenToCategory(addon_folder)
 end
 
--- secure hook CHAT_MSG_WHISPER for testing purposes when the user sends themself a message
-local PriceAnswerSentMessages = {}
-hooksecurefunc("SendChatMessage", function(message, _, _, _, _, _, _, mine)
-    if mine then
+-- secure hook SendChatMessage for testing purposes when the user sends themself a message
+hooksecurefunc("SendChatMessage", function(message, senderName)
+    if senderName == playerName then
         PriceAnswerSentMessages[message] = 1
     end
 end)
 
 -- chat messages event handlers
-function PriceAnswer:CHAT_MSG_CHANNEL(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_SAY(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.sayChannel, nil, db.replyChannel.sayChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.sayChannel, nil, db.replyChannel.sayChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_YELL(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.yellChannel, nil, db.replyChannel.yellChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.yellChannel, nil, db.replyChannel.yellChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_GUILD(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.guildChannel, nil, db.replyChannel.guildChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.guildChannel, nil, db.replyChannel.guildChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_OFFICER(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.officerChannel, nil, db.replyChannel.officerChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.officerChannel, nil, db.replyChannel.officerChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_PARTY(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.partyChannel, nil, db.replyChannel.partyChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.partyChannel, nil, db.replyChannel.partyChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_INSTANCE_CHAT(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.instanceChannel, nil, db.replyChannel.instanceChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.instanceChannel, nil, db.replyChannel.instanceChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_COMMUNITIES_CHANNEL(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, "WHISPER", nil, senderName)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_RAID(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.raidChannel, nil, db.replyChannel.raidChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.raidChannel, nil, db.replyChannel.raidChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_RAID_WARNING(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, db.replyChannel.raidWarningChannel, nil, db.replyChannel.raidWarningChannel == "WHISPER" and senderName or nil)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, db.replyChannel.raidWarningChannel, nil, db.replyChannel.raidWarningChannel == "WHISPER" and senderName or nil)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_WHISPER(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage, senderName = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    -- prevent the user from infinitely whispering him/herself when testing
-    if PriceAnswerSentMessages[incomingMessage] then return end
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        SendChatMessage(outgoingMessageOne, "WHISPER", nil, senderName, nil, nil, nil, true)
-    end
-    if outgoingMessageTwo ~= "" then
-        SendChatMessage(outgoingMessageTwo, "WHISPER", nil, senderName, nil, nil, nil, true)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
-function PriceAnswer:CHAT_MSG_BN_WHISPER(event, ...)
-    if db.disableInCombat and UnitAffectingCombat("player") then return end
-
-    local incomingMessage = ...
-    -- this escapes the ? character but the other magic characters could also be escaped
-    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
-
-    local bnSenderID = select(13, ...)
-
-    -- stop listening to the event while we process the incoming message
-    self:UnregisterEvent(event)
-
-    local outgoingMessageOne, outgoingMessageTwo = self:GetOutgoingMessage(incomingMessage) -- need to split returned strings; each message must be <= 255 characters
-
-    if outgoingMessageOne ~= "" then
-        BNSendWhisper(bnSenderID, outgoingMessageOne)
-    end
-
-    if outgoingMessageTwo ~= "" then
-        BNSendWhisper(bnSenderID, outgoingMessageTwo)
-    end
-
-    -- we are done processing the incoming message, listen to the  event again
-    self:RegisterEvent(event)
-end
-
 -- no need to duplicate code for every event
 function PriceAnswer:GetOutgoingMessage(incomingMessage)
     -- pattern for "trigger N item" incoming chat messages
@@ -499,14 +209,23 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
     local dbregionhistoricalCopper = self:GetItemValue("dbregionhistorical", itemString, itemCount)
     local dbrecentCopper = self:GetItemValue("dbrecent", itemString, itemCount)
 
-    -- min buyout, provided by TSM ("dbminbuyout"), Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
-    dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
-
-    -- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")
-    dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
-
-    -- recent value, provided by TSM ("dbrecent") or Auctioneer ("aucappraiser")
-    dbrecentCopper = dbrecentCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
+    -- Fresh or Fresh Hardcore, Mists, and Mainline
+    if isFresh or isMists or isMainline then
+        -- min buyout, provided by TSM ("dbminbuyout"), Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
+        dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+        -- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")
+        dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
+        -- recent value, provided by TSM ("dbrecent") or Auctioneer ("aucappraiser")
+        dbrecentCopper = dbrecentCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
+    else
+        -- we need external price sources for vanilla Classic Era, non-Fresh, & SoD
+        dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+        dbmarketCopper = self:GetItemValue("aucmarket", itemString, itemCount)
+        dbrecentCopper = self:GetItemValue("aucappraiser", itemString, itemCount)
+        dbregionmarketavgCopper = 0
+        dbhistoricalCopper = 0
+        dbregionhistoricalCopper = 0
+    end
 
     -- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
     local craftingString = self:ConvertToHumanReadable(craftingCopper)
@@ -535,7 +254,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
     if db.tsmSources["dbrecent"] then
         if dbrecentString then
-            outgoingMessageOne = outgoingMessageOne .. " " .. L["Current DB Avg"] .. " " .. dbrecentString
+            outgoingMessageOne = outgoingMessageOne .. " " .. L["Current AH Avg"] .. " " .. dbrecentString
         end
     end
 
@@ -553,7 +272,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
     if db.tsmSources["dbregionhistorical"] then
         if dbregionhistoricalString then
-            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["60- Day Region Avg"] .. " " .. dbregionhistoricalString
+            outgoingMessageTwo = outgoingMessageTwo .. " " .. L["60-Day Region Avg"] .. " " .. dbregionhistoricalString
         end
     end
 
@@ -621,4 +340,37 @@ function PriceAnswer:ConvertToHumanReadable(num_copper)
         return gold_string .. silver_string .. copper_string
     end
     return nil
+end
+
+-- Generalized event handler
+function PriceAnswer:HandleChatEvent(event, ...)
+    if db.disableInCombat and UnitAffectingCombat("player") then return end
+
+    local incomingMessage, senderName = ...
+    if PriceAnswerSentMessages[incomingMessage] then return end -- prevent loop for WHISPER
+
+    if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
+
+    self:UnregisterEvent(event)
+
+    local msg1, msg2 = self:GetOutgoingMessage(incomingMessage)
+    if msg1 ~= "" then
+        self:SendResponse(event, msg1, senderName, ...)
+    end
+    if msg2 ~= "" then
+        self:SendResponse(event, msg2, senderName, ...)
+    end
+
+    self:RegisterEvent(event, "HandleChatEvent")
+end
+
+-- Helper to send response via correct channel
+function PriceAnswer:SendResponse(event, msg, target, ...)
+    local channel = db.replyChannel[event] or "WHISPER"
+    if event == "CHAT_MSG_BN_WHISPER" then
+        local bnSenderID = select(13, ...)
+        BNSendWhisper(bnSenderID, msg)
+    else
+        SendChatMessage(msg, channel, nil, channel == "WHISPER" and target or nil)
+    end
 end

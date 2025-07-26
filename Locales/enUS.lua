@@ -6,8 +6,8 @@ local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, flag)
 
 L["14-Day Realm Avg"] = true
 L["14-Day Region Avg"] = true
-L["60- Day Region Avg"] = true
 L["60-Day Realm Avg"] = true
+L["60-Day Region Avg"] = true
 L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"] = true
 L["A: At least one of your same-faction, same-realm characters must know the recipe"] = true
 L["A: No, which is the point. You need TradeSkillMaster for Price Answer to work"] = true
@@ -17,7 +17,7 @@ L["A: The AddOn will process the incoming message, and erroneously tell the send
 L["A: True, because adding a message to your chat window allows colours, whereas sending a chat message to someone else does not"] = true
 L["Any symbol, word, or phrase that triggers sending price answers"] = true
 L["Crafting Cost"] = true
-L["Current DB Avg"] = true
+L["Current AH Avg"] = true
 L["Disable in combat"] = true
 L["Disenchant/Mill/Prospect Value"] = true
 L["Enables / disables the AddOn"] = true
@@ -27,6 +27,7 @@ L["Incoming messages"] = true
 L["Outgoing messages"] = true
 L["price"] = true
 L["Price Answer"] = true
+L["Price Answer has been updated. The settings have been reset to defaults."] = true
 L["Q: But I can see colours in my chat window?"] = true
 L["Q: Does the person sending the price chack need TradeSkillMaster for Price Answer to work?"] = true
 L["Q: Is there no option to use coins instead of g, s, c?"] = true
