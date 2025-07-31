@@ -1,13 +1,12 @@
 assert(TSM_API, "TradeSkillMaster is missing, please enable", 2)
-local addon_folder = ... -- pt is not used
 
 -- upvalue globals
 local LibStub, TSM_API, pairs, GetItemInfoInstant, pcall = LibStub, TSM_API, pairs, C_Item.GetItemInfoInstant, pcall
 local SendChatMessage, BNSendWhisper, wipe = C_ChatInfo.SendChatMessage or SendChatMessage, BNSendWhisper, table.wipe
 
 -- addon creation
-local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon(addon_folder, "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
-local L = LibStub("AceLocale-3.0"):GetLocale(addon_folder)
+local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
+local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 
 -- defaults for options
 local defaults = {
@@ -85,13 +84,13 @@ function PriceAnswer:OnInitialize()
     options.args.profiles.order = 0
 
     -- LibAboutPanel-2.0 support
-    options.args.aboutTable = self:AboutOptionsTable(addon_folder)
+    options.args.aboutTable = self:AboutOptionsTable("PriceAnswer")
     options.args.aboutTable.order = -1
 
-    LibStub("AceConfig-3.0"):RegisterOptionsTable(addon_folder, options)
+    LibStub("AceConfig-3.0"):RegisterOptionsTable("PriceAnswer", options)
 
     -- register options with WoW's Interface\AddOns\ UI
-    LibStub("AceConfigDialog-3.0"):AddToBlizOptions(addon_folder, L["Price Answer"])
+    LibStub("AceConfigDialog-3.0"):AddToBlizOptions("PriceAnswer", L["Price Answer"])
 
     -- create and register slash command
     self:RegisterChatCommand("priceanswer", "ChatCommand")
@@ -115,15 +114,15 @@ end
 function PriceAnswer:RefreshConfig(callback)
     if callback == "OnProfileReset" then
         self.db:ResetDB(DEFAULT)
-        self.db.global.initialized = true
     end
+    self.db.global.initialized = true
     db = self.db.profile
     wipe(PriceAnswerSentMessages) -- clear the sent messages table
 end
 
 -- handle slash commands
 function PriceAnswer:ChatCommand()
-    Settings.OpenToCategory(addon_folder)
+    Settings.OpenToCategory(L["Price Answer"])
 end
 
 -- secure hook SendChatMessage for testing purposes when the user sends themself a message

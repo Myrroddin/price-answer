@@ -73,8 +73,8 @@ People send the following commands to trigger price checks. Thanks to Bearthazar
 * Market value (14-day realm trend)
 * Recent (market value of an item from the last data snapshot)
 * Region market average (Mists and Retail)
-* Historical (60-day extended market trend) (Mists and Retail)
-* Region historical (60-day extended market trend) (Mists and Retail)
+* Historical (60-day extended market trend) (Fresh, Fresh Hardcore, Mists, and Retail)
+* Region historical (60-day extended market trend) (Fresh, Fresh Hardcore, Mists, and Retail)
 * Crafting cost (at least one same-realm, same-faction character needs to know the recipe)
 * Destroy (DE, milling, prospecting) value
 

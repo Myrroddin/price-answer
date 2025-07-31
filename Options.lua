@@ -66,19 +66,23 @@ function PriceAnswer:GetOptions()
                         order = 10,
                         values = function()
                             local channels = {
-                                ["CHAT_MSG_CHANNEL"]                    = GLOBAL_CHANNELS,
-                                ["CHAT_MSG_SAY"]                        = SAY,
-                                ["CHAT_MSG_YELL"]                       = YELL,
-                                ["CHAT_MSG_GUILD"]                      = GUILD,
-                                ["CHAT_MSG_OFFICER"]                    = OFFICER,
-                                ["CHAT_MSG_PARTY"]                      = PARTY,
-                                ["CHAT_MSG_RAID"]                       = RAID,
-                                ["CHAT_MSG_WHISPER"]                    = WHISPER,
-                                ["CHAT_MSG_BN_WHISPER"]                 = BN_WHISPER,
-                                ["CHAT_MSG_RAID_WARNING"]               = RAID_WARNING
+                                ["CHAT_MSG_CHANNEL"]                        = GLOBAL_CHANNELS,
+                                ["CHAT_MSG_SAY"]                            = SAY,
+                                ["CHAT_MSG_YELL"]                           = YELL,
+                                ["CHAT_MSG_GUILD"]                          = GUILD,
+                                ["CHAT_MSG_OFFICER"]                        = OFFICER,
+                                ["CHAT_MSG_PARTY"]                          = PARTY,
+                                ["CHAT_MSG_RAID"]                           = RAID,
+                                ["CHAT_MSG_WHISPER"]                        = WHISPER,
+                                ["CHAT_MSG_BN_WHISPER"]                     = BN_WHISPER,
+                                ["CHAT_MSG_RAID_WARNING"]                   = RAID_WARNING
                             }
-                            channels["CHAT_MSG_INSTANCE_CHAT"]          = isMists or isMainline and INSTANCE_CHAT or nil
-                            channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = isMainline and CLUB_FINDER_COMMUNITIES or nil
+                            if isMists or isMainline then
+                                channels["CHAT_MSG_INSTANCE_CHAT"]          = INSTANCE_CHAT
+                            end
+                            if isMainline then
+                                channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
+                            end
                             return channels
                         end,
                         get = function(_, key_name)
