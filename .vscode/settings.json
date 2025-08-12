@@ -48,7 +48,9 @@
         "StaticPopupDialogs",
         "OKAY",
         "ACCEPT",
-        "StaticPopup_Show"
+        "StaticPopup_Show",
+        "SlashCmdList",
+        "ChatFrame_AddMessageEventFilter"
     ],
     "Lua.diagnostics.disable": [
         "param-type-mismatch"

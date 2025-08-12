@@ -34,7 +34,8 @@ local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" v
 local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria Classic
 local isFresh = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "Classic" versions of the game
 isFresh = isFresh and isFresh >= 11 -- Fresh or Fresh Hardcore, Season 11 or later
-local playerName, PriceAnswerSentMessages = UnitFullName("player"), {} -- used to stop loop for whispers
+local playerName = UnitName("player")
+local PriceAnswerSentMessages = {} -- table to track sent messages to prevent loops in whispers
 
 local events = {
     ["CHAT_MSG_CHANNEL"]                = true,
@@ -117,7 +118,6 @@ function PriceAnswer:RefreshConfig(callback)
     end
     self.db.global.initialized = true
     db = self.db.profile
-    wipe(PriceAnswerSentMessages) -- clear the sent messages table
 end
 
 -- handle slash commands
@@ -126,9 +126,10 @@ function PriceAnswer:ChatCommand()
 end
 
 -- secure hook SendChatMessage for testing purposes when the user sends themself a message
-hooksecurefunc("SendChatMessage", function(message, senderName)
-    if senderName == playerName then
-        PriceAnswerSentMessages[message] = 1
+hooksecurefunc("SendChatMessage", function(message, _, _, senderName)
+    if PriceAnswerSentMessages[message] then return end
+    if senderName and senderName == playerName then
+        PriceAnswerSentMessages[message] = true
     end
 end)
 

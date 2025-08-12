@@ -1,4 +1,4 @@
-## Interface: 11507, 50500, 110107
+## Interface: 11507, 50500, 110200
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
 ## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
@@ -17,7 +17,7 @@
 ## X-Author-Server: Lightbringer
 ## Version: @project-version@
 
-## X-License: Copyright (c) 2024-2025 Paul Vandersypen All Rights Rserved
+## X-License: Copyright (c) 2022-2025 Paul Vandersypen All Rights Rserved
 ## X-Localizations: enUS, deDE, esMX, esES, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
 ## X-Category: Chat & Communication, Auction & Economy
 ## X-Credits: SDPhantom, Dridzt, PlusMouse, and ideas based on prior PriceChecker/PriceReply addons
