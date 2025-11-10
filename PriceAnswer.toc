@@ -1,4 +1,4 @@
-## Interface: 11507, 50500, 110200
+## Interface: 11508, 50502, 110205, 120000
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
 ## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
