@@ -1,12 +1,14 @@
-assert(TSM_API, "TradeSkillMaster is missing, please enable", 2)
+local TSM_API = assert(TSM_API, "PriceAnswer requires TradeSkillMaster")
+local CTL = assert(ChatThrottleLib, "PriceAnswer requires ChatThrottleLib")
 
 -- upvalue globals
-local LibStub, TSM_API, pairs, GetItemInfoInstant, pcall = LibStub, TSM_API, pairs, C_Item.GetItemInfoInstant, pcall
-local SendChatMessage, BNSendWhisper, wipe = C_ChatInfo.SendChatMessage or SendChatMessage, BNSendWhisper, table.wipe
+local LibStub, pairs, GetItemInfoInstant, pcall = LibStub, pairs, C_Item.GetItemInfoInstant, pcall
+local SendChatMessage, BNSendWhisper, wipe = C_ChatInfo.SendChatMessage, BNSendWhisper, table.wipe
 
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
-local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
+local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")-- ...existing code...
+local CURRENT_DB_VERSION = 1 -- increment when breaking changes are made
 
 -- defaults for options
 local defaults = {
@@ -25,31 +27,33 @@ local defaults = {
 			["*"] = true
 		}
 	},
-	global = {}
+	global = {
+		current_db_version = CURRENT_DB_VERSION
+	}
 }
 
 -- local variables
 local db -- used for shorthand and for resetting the options to defaults
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria Classic
-local isFresh = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "Classic" versions of the game
-isFresh = isFresh and isFresh >= 11 -- Fresh or Fresh Hardcore, Season 11 or later
+local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "Classic" versions of the game
+isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
 local playerName = UnitName("player")
 local PriceAnswerSentMessages = {} -- table to track sent messages to prevent loops in whispers
 
 local events = {
-	["CHAT_MSG_CHANNEL"]                = true,
-	["CHAT_MSG_SAY"]                    = true,
-	["CHAT_MSG_YELL"]                   = true,
-	["CHAT_MSG_GUILD"]                  = true,
-	["CHAT_MSG_OFFICER"]                = true,
-	["CHAT_MSG_PARTY"]                  = true,
-	["CHAT_MSG_RAID"]                   = true,
-	["CHAT_MSG_WHISPER"]                = true,
-	["CHAT_MSG_BN_WHISPER"]             = true,
-	["CHAT_MSG_RAID_WARNING"]           = true,
-	["CHAT_MSG_INSTANCE_CHAT"]          = isMists or isMainline,
-	["CHAT_MSG_COMMUNITIES_CHANNEL"]    = isMainline
+	["CHAT_MSG_CHANNEL"]				= true,
+	["CHAT_MSG_SAY"]					= true,
+	["CHAT_MSG_YELL"]					= true,
+	["CHAT_MSG_GUILD"]					= true,
+	["CHAT_MSG_OFFICER"]				= true,
+	["CHAT_MSG_PARTY"]					= true,
+	["CHAT_MSG_RAID"]					= true,
+	["CHAT_MSG_WHISPER"]				= true,
+	["CHAT_MSG_BN_WHISPER"]				= true,
+	["CHAT_MSG_RAID_WARNING"]			= true,
+	["CHAT_MSG_INSTANCE_CHAT"]			= isMists or isMainline,
+	["CHAT_MSG_COMMUNITIES_CHANNEL"]	= isMainline
 }
 
 -- main Ace3 Functions
@@ -59,8 +63,8 @@ function PriceAnswer:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
 
-	-- reset the AceDB-3.0 DB on the first run, as we altered the watched chat channel SV names to match the event names
-	if not self.db.global.initialized then
+	-- Only reset if DB version is outdated
+	if (not self.db.global.current_db_version) or (self.db.global.current_db_version < CURRENT_DB_VERSION) then
 		StaticPopupDialogs["PRICEANSWER_RESET"] = {
 			text = L["Price Answer has been updated. The settings have been reset to defaults."],
 			button1 = ACCEPT,
@@ -69,9 +73,8 @@ function PriceAnswer:OnInitialize()
 			hideOnEscape = true
 		}
 		StaticPopup_Show("PRICEANSWER_RESET")
-		self.db:RegisterDefaults(defaults)
 		self.db:ResetDB(DEFAULT)
-		self.db.global.initialized = true
+		self.db.global.current_db_version = CURRENT_DB_VERSION
 	end
 	db = self.db.profile
 
@@ -115,8 +118,8 @@ end
 function PriceAnswer:RefreshConfig(callback)
 	if callback == "OnProfileReset" then
 		self.db:ResetDB(DEFAULT)
+		self.db.global.current_db_version = CURRENT_DB_VERSION
 	end
-	self.db.global.initialized = true
 	db = self.db.profile
 end
 
@@ -210,8 +213,8 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local dbregionhistoricalCopper = self:GetItemValue("dbregionhistorical", itemString, itemCount)
 	local dbrecentCopper = self:GetItemValue("dbrecent", itemString, itemCount)
 
-	-- Fresh or Fresh Hardcore, Mists, and Mainline
-	if isFresh or isMists or isMainline then
+	-- seasons, fresh, hardcore, anniversary, Mists, and Mainline
+	if isSeason or isMists or isMainline then
 		-- min buyout, provided by TSM ("dbminbuyout"), Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
 		dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
 		-- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")

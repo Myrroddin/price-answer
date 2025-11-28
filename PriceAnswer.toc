@@ -1,4 +1,4 @@
-## Interface: 11508, 50502, 110205, 120000
+## Interface: 11508, 50502, 110205
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
 ## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
@@ -28,12 +28,13 @@
 ## X-Wago-ID: lQNlxYNe
 
 ## RequiredDeps: TradeSkillMaster
-## OptionalDeps: LibStub, CallbackHandler-1.0, Ace3, LibAboutPanel-2.0
+## OptionalDeps: LibStub, CallbackHandler-1.0, ChatThrottleLib, Ace3, LibAboutPanel-2.0, Auctionator, Auc-Advanced, OribosExchange, AuctionDB
 
 ## SavedVariables: PriceAnswerDB
 
 Libs\LibStub\LibStub.lua
-Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\ChatThrottleLib\ChatThrottleLib.lua
 Libs\AceAddon-3.0\AceAddon-3.0.xml
 Libs\AceEvent-3.0\AceEvent-3.0.xml
 Libs\AceDB-3.0\AceDB-3.0.xml
