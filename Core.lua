@@ -1,9 +1,14 @@
-local TSM_API = assert(TSM_API, "PriceAnswer requires TradeSkillMaster")
-local CTL = assert(ChatThrottleLib, "PriceAnswer requires ChatThrottleLib")
-
 -- upvalue globals
 local LibStub, pairs, GetItemInfoInstant, pcall = LibStub, pairs, C_Item.GetItemInfoInstant, pcall
-local BNSendWhisper, wipe = BNSendWhisper, table.wipe -- note to self: BNSendWhisper will be replaced by C_BattleNet.SendWhisper in future WoW versions
+local BNSendWhisper, wipe = BNSendWhisper, wipe -- note to self: BNSendWhisper will be replaced by C_BattleNet.SendWhisper in future WoW versions
+local strtrim, strsub, strmatch, gsub = strtrim, strsub, strmatch, gsub
+local select, InCombatLockdown, UnitAffectingCombat = select, InCombatLockdown, UnitAffectingCombat
+local Settings, StaticPopupDialogs, StaticPopup_Show = Settings, StaticPopupDialogs, StaticPopup_Show
+local ACCEPT, DEFAULT = ACCEPT, DEFAULT
+local GetTime, hooksecurefunc = GetTime, hooksecurefunc
+local assert, UnitName = assert, UnitName
+local TSM_API = assert(TSM_API, "PriceAnswer requires TradeSkillMaster")
+local CTL = assert(ChatThrottleLib, "PriceAnswer requires ChatThrottleLib")
 
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
@@ -38,7 +43,10 @@ local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria
 local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "classic" versions of the game
 isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
 local playerName = UnitName("player")
-local PriceAnswerSentMessages = {} -- table to track sent messages to prevent loops in whispers
+local PriceAnswerSentMessages = {} -- table to track sent message hashes to prevent loops in whispers
+local function GetMessageHash(message, sender)
+	return tostring(message) .. "::" .. tostring(sender)
+end
 
 local events = {
 	["CHAT_MSG_CHANNEL"]				= true,
@@ -120,6 +128,7 @@ function PriceAnswer:RefreshConfig(callback)
 		self.db.global.current_db_version = CURRENT_DB_VERSION
 	end
 	db = self.db.profile
+	wipe(PriceAnswerSentMessages) -- clear sent messages on profile change/reset
 end
 
 -- handle slash commands
@@ -127,12 +136,13 @@ function PriceAnswer:ChatCommand()
 	Settings.OpenToCategory(L["Price Answer"])
 end
 
--- secure hook SendChatMessage for testing purposes when the user sends themself a message
-hooksecurefunc("SendChatMessage", function(message, _, _, senderName)
-	if PriceAnswerSentMessages[message] then return end
-	if senderName and senderName == playerName then
-		PriceAnswerSentMessages[message] = true
-	end
+-- secure hook ChatThrottleLib:SendChatMessage for testing purposes when the user sends themself a message
+hooksecurefunc(CTL, "SendChatMessage", function(_, prefix, message, _, _, senderName)
+	if not prefix or prefix ~= "PATSM" then return end
+	if not senderName or senderName ~= playerName then return end -- only track self/test messages
+	local hash = GetMessageHash(message, senderName)
+	if PriceAnswerSentMessages[hash] then return end
+	PriceAnswerSentMessages[hash] = GetTime() -- store timestamp for cleanup
 end)
 
 -- chat messages event handlers
@@ -351,7 +361,13 @@ function PriceAnswer:HandleChatEvent(event, ...)
 	if InCombatLockdown() or UnitAffectingCombat("player") then return end
 
 	local incomingMessage, senderName = ...
-	if PriceAnswerSentMessages[incomingMessage] then return end -- prevent loop for WHISPER
+	local hash = GetMessageHash(incomingMessage, senderName)
+	if PriceAnswerSentMessages[hash] then return end -- prevent loop for WHISPER
+	-- Cleanup old hashes (older than 10 minutes)
+	local now = GetTime()
+	for k, t in pairs(PriceAnswerSentMessages) do
+		if now - t > 600 then PriceAnswerSentMessages[k] = nil end
+	end
 
 	if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
 
