@@ -1,11 +1,8 @@
-local flag = true
---@debug@
-flag = false
---@end-debug@
-local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, flag)
+local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, true)
 
 L["14-Day Realm Avg"] = true
 L["14-Day Region Avg"] = true
+L["3-Day Realm Avg"] = true
 L["60-Day Realm Avg"] = true
 L["60-Day Region Avg"] = true
 L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"] = true
@@ -16,6 +13,7 @@ L["A: That cannot be done without breaking TradeSkillMaster"] = true
 L["A: The AddOn will process the incoming message, and erroneously tell the sender their syntax is wrong. You should leave one or more TSM prices enabled"] = true
 L["A: True, because adding a message to your chat window allows colours, whereas sending a chat message to someone else does not"] = true
 L["Any symbol, word, or phrase that triggers sending price answers"] = true
+L["Cheapest Auction"] = true
 L["Crafting Cost"] = true
 L["Current AH Avg"] = true
 L["Disenchant/Mill/Prospect Value"] = true

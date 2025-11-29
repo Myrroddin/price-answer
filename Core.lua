@@ -8,6 +8,11 @@ local ACCEPT, DEFAULT = ACCEPT, DEFAULT
 local GetTime, hooksecurefunc = GetTime, hooksecurefunc
 local assert, UnitName = assert, UnitName
 local TSM_API = assert(TSM_API, "PriceAnswer requires TradeSkillMaster")
+local GetCustomPriceValue = TSM_API.GetCustomPriceValue
+local IsPriceSourceValid = TSM_API.IsPriceSourceValid
+local ToItemString = TSM_API.ToItemString
+local GetPriceSourceKeys = TSM_API.GetPriceSourceKeys
+local GetPriceSourceDescription = TSM_API.GetPriceSourceDescription
 local CTL = assert(ChatThrottleLib, "PriceAnswer requires ChatThrottleLib")
 
 -- addon creation
@@ -38,8 +43,9 @@ local defaults = {
 
 -- local variables
 local db -- used for shorthand and for resetting the options to defaults
-local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
+local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- retail World of Warcraft
 local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria Classic
+local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC -- Classic Era
 local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "classic" versions of the game
 isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
 local playerName = UnitName("player")
@@ -160,32 +166,17 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	itemCount = itemCount and itemCount:trim()
 	tail = tail and tail:trim()
 
-	-- get the itemID
-	local itemID, retOK, ret1 -- use pcall() to validate GetItemInfoInstant()
-	if not itemID then
-		retOK, ret1 = pcall(GetItemInfoInstant, tail)
-		if retOK then
-			itemID = ret1
-		else
-			retOK, ret1 = pcall(GetItemInfoInstant, tonumber(tail))
-			if retOK then
-				itemID = ret1
-			end
-		end
+	-- Helper to try getting itemID from multiple sources
+	local function tryGetItemID(val)
+		if not val then return nil end
+		local ok, result = pcall(GetItemInfoInstant, val)
+		if ok and result then return result end
+		ok, result = pcall(GetItemInfoInstant, tonumber(val))
+		if ok and result then return result end
+		return nil
 	end
 
-	-- the above did not get an itemID
-	if not itemID then
-		retOK, ret1 = pcall(GetItemInfoInstant, itemCount)
-		if retOK then
-			itemID = ret1
-		else
-			retOK, ret1 = pcall(GetItemInfoInstant, tonumber(itemCount))
-			if retOK then
-				itemID = ret1
-			end
-		end
-	end -- at this point it does not matter if there is no itemID
+	local itemID = tryGetItemID(tail) or tryGetItemID(itemCount)
 
 	-- convert to a TSM item string "i:12345"
 	local itemString
@@ -193,16 +184,12 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		itemString = TSM_API.ToItemString(tostring(tail))
 		if not itemString then
 			itemString = TSM_API.ToItemString(tostring(itemCount))
-			if itemString then
-				itemCount = 1
-			end
+			if itemString then itemCount = 1 end
 		end
-		if not itemString then
-			if itemID then -- check if there is an itemID from the pcall()
-				itemString = TSM_API.ToItemString(tostring(itemID))
-				if not itemString then
-					itemString = "i:" .. tostring(itemID)
-				end
+		if not itemString and itemID then
+			itemString = TSM_API.ToItemString(tostring(itemID))
+			if not itemString then
+				itemString = "i:" .. tostring(itemID)
 			end
 		end
 	end
@@ -212,32 +199,37 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		itemCount = 1
 	end
 
-	-- get values in copper coins
-	local craftingCopper = self:GetItemValue("crafting", itemString, itemCount)
-	local destroyCopper = self:GetItemValue("destroy", itemString, itemCount)
-	local dbminbuyoutCopper = self:GetItemValue("dbminbuyout", itemString, itemCount)
-	local dbmarketCopper = self:GetItemValue("dbmarket", itemString, itemCount)
-	local dbregionmarketavgCopper = self:GetItemValue("dbregionmarketavg", itemString, itemCount)
-	local dbhistoricalCopper = self:GetItemValue("dbhistorical", itemString, itemCount)
-	local dbregionhistoricalCopper = self:GetItemValue("dbregionhistorical", itemString, itemCount)
-	local dbrecentCopper = self:GetItemValue("dbrecent", itemString, itemCount)
+	-- cache price results per item per message
+	local priceCache = {}
+	local function getCachedPrice(source)
+		if priceCache[source] ~= nil then return priceCache[source] end
+		priceCache[source] = self:GetItemValue(source, itemString, itemCount)
+		return priceCache[source]
+	end
+	local craftingCopper = getCachedPrice("crafting")
+	local destroyCopper = getCachedPrice("destroy")
+	local dbminbuyoutCopper = getCachedPrice("dbminbuyout")
+	local dbmarketCopper = getCachedPrice("dbmarket")
+	local dbregionmarketavgCopper = getCachedPrice("dbregionmarketavg")
+	local dbhistoricalCopper = getCachedPrice("dbhistorical")
+	local dbregionhistoricalCopper = getCachedPrice("dbregionhistorical")
+	local dbrecentCopper = getCachedPrice("dbrecent")
+	local oeCopper = getCachedPrice("oerealm") -- only for retail WoW, from Oribos Exchange
 
-	-- seasons, fresh, hardcore, anniversary, Mists, and Mainline
+	-- non-Vanilla Classic Era, Mists Classic, and Mainline
 	if isSeason or isMists or isMainline then
-		-- min buyout, provided by TSM ("dbminbuyout"), Auctioneer ("aucminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
-		dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
-		-- market value, provided by TSM ("dbmarket") or Auctioneer ("aucmarket")
-		dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
-		-- recent value, provided by TSM ("dbrecent") or Auctioneer ("aucappraiser")
-		dbrecentCopper = dbrecentCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
-	else
-		-- we need external price sources for vanilla Classic Era, non-Fresh, & SoD
+		-- min buyout, provided by TSM ("dbminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
+		dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+	elseif isClassicEra and not isSeason then
+		-- we need external price sources for vanilla Classic Era: Auctioneer, Auctionator, or Auction House DataBase
 		dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
 		dbmarketCopper = self:GetItemValue("aucmarket", itemString, itemCount)
 		dbrecentCopper = self:GetItemValue("aucappraiser", itemString, itemCount)
+		-- these values are not available in vanilla Classic Era
 		dbregionmarketavgCopper = 0
 		dbhistoricalCopper = 0
 		dbregionhistoricalCopper = 0
+		oeCopper = 0
 	end
 
 	-- convert copper coins into human-readable strings "14g55s96c" or nil. must be >= 1c if it isn't nil
@@ -249,25 +241,32 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local dbhistoricalString = self:ConvertToHumanReadable(dbhistoricalCopper)
 	local dbregionhistoricalString = self:ConvertToHumanReadable(dbregionhistoricalCopper)
 	local dbrecentString = self:ConvertToHumanReadable(dbrecentCopper)
+	local oeString = self:ConvertToHumanReadable(oeCopper)
 
 	-- build the outgoing message
 	local outgoingMessageOne, outgoingMessageTwo = "", ""
 
-	if db.tsmSources["dbmarket"] then
-		if dbmarketString then
-			outgoingMessageOne = L["14-Day Realm Avg"] .. " " .. dbmarketString
-		end
-	end
-
 	if db.tsmSources["dbminbuyout"] then
 		if dbminbuyoutString then
-			outgoingMessageOne = outgoingMessageOne .. " " .. MINIMUM .. " " .. dbminbuyoutString
+			outgoingMessageOne = L["Cheapest Auction"] .. " " .. dbminbuyoutString
 		end
 	end
 
 	if db.tsmSources["dbrecent"] then
 		if dbrecentString then
 			outgoingMessageOne = outgoingMessageOne .. " " .. L["Current AH Avg"] .. " " .. dbrecentString
+		end
+	end
+
+	if db.tsmSources["oerealm"] then
+		if oeString then
+			outgoingMessageOne = outgoingMessageOne .. " " .. L["3-Day Realm Avg"] .. " " .. oeString
+		end
+	end
+
+	if db.tsmSources["dbmarket"] then
+		if dbmarketString then
+			outgoingMessageOne = outgoingMessageOne .. " " .. L["14-Day Realm Avg"] .. " " .. dbmarketString
 		end
 	end
 
@@ -310,19 +309,14 @@ end
 
 -- TradeSkillMaster price functions
 function PriceAnswer:GetItemValue(price_source, item_string, item_count)
-	if TSM_API and TSM_API.GetCustomPriceValue then
-		if item_string then
-			if TSM_API.GetCustomPriceValue(price_source, item_string) then -- if it isn't nil, then...
-				local num_copper, err_string = TSM_API.GetCustomPriceValue(price_source, item_string) * item_count
-				if num_copper then
-					return num_copper
-				elseif err_string then
-					self:Print(err_string)
-				end
-			end
-		end
+	if not item_string or not price_source then return 0 end
+	if not IsPriceSourceValid or not IsPriceSourceValid(price_source) then return 0 end
+	if not GetCustomPriceValue then return 0 end
+	local ok, value, err_string = pcall(GetCustomPriceValue, price_source, item_string)
+	if ok and value and type(value) == "number" then
+		return value * (item_count or 1)
 	end
-	return 0 -- price_source not valid, no current or known value, or item_string is not valid, return non-nil so we don't error
+	return 0
 end
 
 -- TradeSkillMaster has some weird control characters in TSM_API.FormatMoneyString, build our own version

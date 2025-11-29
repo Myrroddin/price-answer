@@ -4,9 +4,21 @@ local strlen, ENABLE, DISABLE, JUST_OR = strlen, ENABLE, DISABLE, JUST_OR
 local SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER = SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER
 local RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL = RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL
 local isMainline, isMists = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE, WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
+
 local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
+
+-- Cache TSM price source descriptions at startup
+local TSMPriceSourceDescriptions = {}
+local TSMPriceSourceKeys = TSM_API.GetPriceSourceKeys and TSM_API.GetPriceSourceKeys() or {
+	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent"
+}
+for _, key in ipairs(TSMPriceSourceKeys) do
+	if TSM_API.GetPriceSourceDescription then
+		TSMPriceSourceDescriptions[key] = TSM_API.GetPriceSourceDescription(key)
+	end
+end
 
 function PriceAnswer:GetOptions()
 	local db = self.db.profile
@@ -160,16 +172,16 @@ function PriceAnswer:GetOptions()
 						type = "multiselect",
 						name = L["Sources' gold values sent in the reply, if valid"],
 						order = 10,
-						values = {
-							["dbmarket"] = TSM_API.GetPriceSourceDescription("dbmarket"),
-							["dbminbuyout"] = TSM_API.GetPriceSourceDescription("dbminbuyout"),
-							["destroy"] = TSM_API.GetPriceSourceDescription("destroy"),
-							["dbregionmarketavg"] = TSM_API.GetPriceSourceDescription("dbregionmarketavg"),
-							["dbhistorical"] = TSM_API.GetPriceSourceDescription("dbhistorical"),
-							["dbregionhistorical"] = TSM_API.GetPriceSourceDescription("dbregionhistorical"),
-							["crafting"] = TSM_API.GetPriceSourceDescription("crafting"),
-							["dbrecent"] = TSM_API.GetPriceSourceDescription("dbrecent")
-						},
+						values = function()
+							local sources = {}
+							for _, key in ipairs(TSMPriceSourceKeys) do
+								sources[key] = TSMPriceSourceDescriptions[key] or key
+							end
+							if isMainline and TSM_API.GetPriceSourceDescription then
+								sources["oerealm"] = TSM_API.GetPriceSourceDescription("oerealm")
+							end
+							return sources
+						end,
 						get = function(_, key_name) return db.tsmSources[key_name] end,
 						set = function(_, key_name, value) db.tsmSources[key_name] = value end
 					}
