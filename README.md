@@ -3,18 +3,18 @@
 Reply to price checks automatically using TSM or an external addon's item values.
 
 ## Table of Contents
+
 - [Description](#description)
 - [Requirements](#requirements)
 - [Supported WoW versions and price sources](#supported-wow-versions-and-price-sources)
+- [TradeSkillMaster prices](#tradeskillmaster-prices)
 - [Price sources priority](#price-sources-priority)
-- [Supported external addons](#supported-external-addons)
-	- [Auctionator and AHDB](#auctionator-and-ahdb)
+	- [Auctionator and Auction House DataBase (AHDB)](#auctionator-and-auction-house-database-ahdb)
 	- [Auctioneer](#auctioneer)
 	- [Oribos Exchange](#oribos-exchange)
 - [Open the settings](#open-the-settings)
 - [Asking for a price check](#asking-for-a-price-check)
 - [Chat channels listened](#chat-channels-listened)
-- [TradeSkillMaster prices](#tradeskillmaster-prices)
 - [Questions & answers](#questions--answers)
 - [Bugs and suggestions](#bugs-and-suggestions)
 - [Translate](#translate)
@@ -25,37 +25,44 @@ Price Answer requires **you** to have [TradeSkillMaster](https://www.tradeskillm
 
 ## Supported WoW versions and price sources
 
-
 | WoW Version                | TSM Price Sources Available | External Addon Price Sources Supported |
 |----------------------------|-----------------------------|----------------------------------------|
-| Retail (Mainline)          | All TSM sources, Oribos Exchange (oerealm) | Auctionator, AHDB (dbminbuyout), Oribos Exchange |
-| Mists of Pandaria Classic  | All TSM sources             | Auctionator, AHDB (dbminbuyout)        |
-| Season of Discovery        | All TSM sources             | Auctionator, AHDB (dbminbuyout)        |
-| Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, AHDB (dbminbuyout)        |
-| Classic Era (non-Fresh)    | Limited TSM sources         | Auctionator (atrvalue), Auctioneer (aucminbuyout, aucmarket, aucappraiser), AHDB (ahdbminbuyout) |
+| Retail (Mainline)          | All TSM sources             | Auctionator, AHDB, Oribos Exchange     |
+| Mists of Pandaria Classic  | All TSM sources             | Auctionator, AHDB                      |
+| Season of Discovery        | All TSM sources             | Auctionator, AHDB                      |
+| Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, AHDB                      |
+| Anniversary                | All TSM sources             | Auctionator, AHDB                      |
+| Classic Era (vanilla)      | Limited TSM sources         | Auctionator, Auctioneer, AHDB          |
 
 **Notes:**
-- Oribos Exchange (oerealm) is supported in Retail/Mainline only.
+- Oribos Exchange is supported in Retail/Mainline only.
 - External price sources are used if TSM data is unavailable or you choose not to use the TSM desktop app.
+- External price sources are mapped to the equivalent TSM price sources where possible. Not all price sources are available for all World of Warcraft versions, regardless of additional addons.
+- Vanilla Classic Era requires an external addon to provide price data to TSM. Only `crafting` and `destroy` from TSM are directly available, although with the usual validity restrictions as with all WoW versions.
+
+## TradeSkillMaster prices
+
+- Min buyout
+- Market value (14-day realm trend)
+- Recent (market value of an item from the last data snapshot)
+- Region market average (market trend across either US or EU)
+- Historical (60-day extended market trend)
+- Region historical (60-day extended regional market trend)
+- Crafting cost (at least one of your same-realm, same-faction characters must know the recipe)
+- Destroy (DE, milling, prospecting) value
 
 ## Price sources priority
 
-
-1. Native TradeSkillMaster price sources (dbminbuyout, dbmarket, dbrecent, dbregionmarketavg, dbhistorical, dbregionhistorical, crafting, destroy, oerealm)
+1. Native TradeSkillMaster price sources (dbminbuyout, dbmarket, dbrecent, dbregionmarketavg, dbhistorical, dbregionhistorical, crafting, destroy)
 2. External addon price sources (Auctionator, Auctioneer, AHDB, Oribos Exchange)
 
-Price Answer will use external addon prices if TSM data is unavailable or you choose not to use the TSM desktop app. TSM's price sources are significantly better than external addons. Only available price sources for your WoW version/addons are sent in replies.
-
-## Supported external addons
-
-
-Auctionator, Auctioneer, Auction House DataBase (AHDB), and Oribos Exchange prices are supported. These are mapped to the equivalent TSM price sources where possible. Not all price sources are available for all World of Warcraft versions, regardless of additional addons.
-
-### Auctionator and AHDB
+### Auctionator and Auction House DataBase (AHDB)
 
 - Provides a minimum buyout, i.e., the least expensive single auction of an item. Mapped to TSM's minimum buyout (`dbminbuyout`).
 
 ### Auctioneer
+
+Supported in all variants of Classic Era, provided the variants use the original auction house functionality from before the patch 8.3 rework, and does not function for Mists Classic or mainline/retail.
 
 - Provides a minimum buyout, i.e., the least expensive single auction of an item. Mapped to TSM's minimum buyout (`dbminbuyout`).
 - Provides a trending market value of an item over time. Mapped to TSM's market value (`dbmarket`).
@@ -89,17 +96,6 @@ People send the following commands to trigger price checks. Thanks to Bearthazar
 - Whisper, BN Whisper
 - Instance (Mists Classic & Retail)
 - Community (Retail)
-
-## TradeSkillMaster prices
-
-- Min buyout
-- Market value (14-day realm trend)
-- Recent (market value of an item from the last data snapshot)
-- Region market average (Mists and Retail)
-- Historical (60-day extended market trend) (Fresh, Fresh Hardcore, Mists, and Retail)
-- Region historical (60-day extended market trend) (Fresh, Fresh Hardcore, Mists, and Retail)
-- Crafting cost (at least one same-realm, same-faction character must know the recipe)
-- Destroy (DE, milling, prospecting) value
 
 ## Questions & answers
 
