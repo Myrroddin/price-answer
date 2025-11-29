@@ -34,14 +34,6 @@ function PriceAnswer:GetOptions()
 					end
 				end
 			},
-			disableInCombat = {
-				order = 30,
-				name = L["Disable in combat"],
-				desc = L["Stops watching chat channels while you are in combat"],
-				type = "toggle",
-				get = function() return db.disableInCombat end,
-				set = function(_, value) db.disableInCombat = value end
-			},
 			formatLargeNumbers = {
 				order = 40,
 				name = L["Format large gold numbers"],
@@ -66,22 +58,22 @@ function PriceAnswer:GetOptions()
 						order = 10,
 						values = function()
 							local channels = {
-								["CHAT_MSG_CHANNEL"]                        = GLOBAL_CHANNELS,
-								["CHAT_MSG_SAY"]                            = SAY,
-								["CHAT_MSG_YELL"]                           = YELL,
-								["CHAT_MSG_GUILD"]                          = GUILD,
-								["CHAT_MSG_OFFICER"]                        = OFFICER,
-								["CHAT_MSG_PARTY"]                          = PARTY,
-								["CHAT_MSG_RAID"]                           = RAID,
-								["CHAT_MSG_WHISPER"]                        = WHISPER,
-								["CHAT_MSG_BN_WHISPER"]                     = BN_WHISPER,
-								["CHAT_MSG_RAID_WARNING"]                   = RAID_WARNING
+								["CHAT_MSG_CHANNEL"]			= GLOBAL_CHANNELS,
+								["CHAT_MSG_SAY"]				= SAY,
+								["CHAT_MSG_YELL"]				= YELL,
+								["CHAT_MSG_GUILD"]				= GUILD,
+								["CHAT_MSG_OFFICER"]			= OFFICER,
+								["CHAT_MSG_PARTY"]				= PARTY,
+								["CHAT_MSG_RAID"]				= RAID,
+								["CHAT_MSG_WHISPER"]			= WHISPER,
+								["CHAT_MSG_BN_WHISPER"]			= BN_WHISPER,
+								["CHAT_MSG_RAID_WARNING"]		= RAID_WARNING
 							}
 							if isMists or isMainline then
-								channels["CHAT_MSG_INSTANCE_CHAT"]          = INSTANCE_CHAT
+								channels["CHAT_MSG_INSTANCE_CHAT"]	= INSTANCE_CHAT
 							end
 							if isMainline then
-								channels["CHAT_MSG_COMMUNITIES_CHANNEL"]    = CLUB_FINDER_COMMUNITIES
+								channels["CHAT_MSG_COMMUNITIES_CHANNEL"]	= CLUB_FINDER_COMMUNITIES
 							end
 							return channels
 						end,
@@ -135,8 +127,8 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 10,
 						values = {
-							["WHISPER"]        = WHISPER,
-							["SAY"]            = SAY
+							["WHISPER"]	= WHISPER,
+							["SAY"]		= SAY
 						},
 						get = function()  return db.replyChannel["CHAT_MSG_SAY"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_SAY"] = value end
@@ -148,8 +140,8 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 20,
 						values = {
-							["WHISPER"]        = WHISPER,
-							["YELL"]           = YELL
+							["WHISPER"]	= WHISPER,
+							["YELL"]	= YELL
 						},
 						get = function() return db.replyChannel["CHAT_MSG_YELL"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_YELL"] = value end
@@ -161,8 +153,8 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 30,
 						values = {
-							["WHISPER"]        = WHISPER,
-							["GUILD"]          = GUILD
+							["WHISPER"]	= WHISPER,
+							["GUILD"]	= GUILD
 						},
 						get = function() return db.replyChannel["CHAT_MSG_GUILD"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_GUILD"] = value end
@@ -174,8 +166,8 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 40,
 						values = {
-							["WHISPER"]        = WHISPER,
-							["OFFICER"]        = OFFICER
+							["WHISPER"]	= WHISPER,
+							["OFFICER"]	= OFFICER
 						},
 						get = function() return db.replyChannel["CHAT_MSG_OFFICER"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_OFFICER"] = value end
@@ -187,8 +179,8 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 50,
 						values = {
-							["WHISPER"]        = WHISPER,
-							["PARTY"]          = PARTY
+							["WHISPER"]	= WHISPER,
+							["PARTY"]	= PARTY
 						},
 						get = function() return db.replyChannel["CHAT_MSG_PARTY"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_PARTY"] = value end
@@ -200,8 +192,8 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 60,
 						values = {
-							["WHISPER"]        = WHISPER,
-							["RAID"]           = RAID
+							["WHISPER"]	= WHISPER,
+							["RAID"]	= RAID
 						},
 						get = function() return db.replyChannel["CHAT_MSG_RAID"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_RAID"] = value end
@@ -213,9 +205,9 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 70,
 						values = {
-							["WHISPER"]         = WHISPER,
-							["RAID"]            = RAID,
-							["RAID_WARNING"]    = RAID_WARNING
+							["WHISPER"]			= WHISPER,
+							["RAID"]			= RAID,
+							["RAID_WARNING"]	= RAID_WARNING
 						},
 						get = function() return db.replyChannel["CHAT_MSG_RAID_WARNING"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_RAID_WARNING"] = value end
@@ -227,8 +219,8 @@ function PriceAnswer:GetOptions()
 						desc = L["How do you want to answer this channel"],
 						order = 80,
 						values = {
-							["WHISPER"]         = WHISPER,
-							["INSTANCE_CHAT"]   = INSTANCE_CHAT
+							["WHISPER"]			= WHISPER,
+							["INSTANCE_CHAT"]	= INSTANCE_CHAT
 						},
 						get = function() return db.replyChannel["CHAT_MSG_INSTANCE_CHAT"] end,
 						set = function(_, value) db.replyChannel["CHAT_MSG_INSTANCE_CHAT"] = value end,
@@ -247,14 +239,14 @@ function PriceAnswer:GetOptions()
 						name = L["Sources' gold values sent in the reply, if valid"],
 						order = 10,
 						values = {
-							["dbmarket"]                = TSM_API.GetPriceSourceDescription("dbmarket"),
-							["dbminbuyout"]             = TSM_API.GetPriceSourceDescription("dbminbuyout"),
-							["destroy"]                 = TSM_API.GetPriceSourceDescription("destroy"),
-							["dbregionmarketavg"]       = TSM_API.GetPriceSourceDescription("dbregionmarketavg"),
-							["dbhistorical"]            = TSM_API.GetPriceSourceDescription("dbhistorical"),
-							["dbregionhistorical"]      = TSM_API.GetPriceSourceDescription("dbregionhistorical"),
-							["crafting"]                = TSM_API.GetPriceSourceDescription("crafting"),
-							["dbrecent"]                = TSM_API.GetPriceSourceDescription("dbrecent")
+							["dbmarket"]			= TSM_API.GetPriceSourceDescription("dbmarket"),
+							["dbminbuyout"]			= TSM_API.GetPriceSourceDescription("dbminbuyout"),
+							["destroy"]				= TSM_API.GetPriceSourceDescription("destroy"),
+							["dbregionmarketavg"]	= TSM_API.GetPriceSourceDescription("dbregionmarketavg"),
+							["dbhistorical"]		= TSM_API.GetPriceSourceDescription("dbhistorical"),
+							["dbregionhistorical"]	= TSM_API.GetPriceSourceDescription("dbregionhistorical"),
+							["crafting"]			= TSM_API.GetPriceSourceDescription("crafting"),
+							["dbrecent"]			= TSM_API.GetPriceSourceDescription("dbrecent")
 						},
 						get = function(_, key_name) return db.tsmSources[key_name] end,
 						set = function(_, key_name, value) db.tsmSources[key_name] = value end

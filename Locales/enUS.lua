@@ -18,7 +18,6 @@ L["A: True, because adding a message to your chat window allows colours, whereas
 L["Any symbol, word, or phrase that triggers sending price answers"] = true
 L["Crafting Cost"] = true
 L["Current AH Avg"] = true
-L["Disable in combat"] = true
 L["Disenchant/Mill/Prospect Value"] = true
 L["Enables / disables the AddOn"] = true
 L["Format large gold numbers"] = true
@@ -36,7 +35,6 @@ L["Q: What happens if I toggle off all TradeSkillMaster prices?"] = true
 L["Q: Where is the option to send messages to community chat?"] = true
 L["Q: Why isn't this addon built into TradeSkillMaster?"] = true
 L["Sources' gold values sent in the reply, if valid"] = true
-L["Stops watching chat channels while you are in combat"] = true
 L["The trigger"] = true
 L["The trigger must be one or more non-space characters, a word, or a phrase (can contain spaces between words in the phrase)"] = true
 L["TSM price sources"] = true

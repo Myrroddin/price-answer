@@ -14,7 +14,6 @@ local CURRENT_DB_VERSION = 1 -- increment when breaking changes are made
 local defaults = {
 	profile = {
 		enableAddOn = true,
-		disableInCombat = true,
 		formatLargeNumbers = true,
 		trigger = "price",
 		replyChannel = {
@@ -348,7 +347,8 @@ end
 
 -- Generalized event handler
 function PriceAnswer:HandleChatEvent(event, ...)
-	if db.disableInCombat and UnitAffectingCombat("player") then return end
+	-- hard exit if in combat to prevent tainting issues
+	if InCombatLockdown() or UnitAffectingCombat("player") then return end
 
 	local incomingMessage, senderName = ...
 	if PriceAnswerSentMessages[incomingMessage] then return end -- prevent loop for WHISPER
@@ -370,6 +370,9 @@ end
 
 -- Helper to send response via correct channel
 function PriceAnswer:SendResponse(event, msg, target, ...)
+	-- hard exit if in combat to prevent tainting issues
+	if InCombatLockdown() or UnitAffectingCombat("player") then return end
+
 	local channel = db.replyChannel[event] or "WHISPER"
 	if event == "CHAT_MSG_BN_WHISPER" then
 		local bnSenderID = select(13, ...)
