@@ -3,11 +3,11 @@ local CTL = assert(ChatThrottleLib, "PriceAnswer requires ChatThrottleLib")
 
 -- upvalue globals
 local LibStub, pairs, GetItemInfoInstant, pcall = LibStub, pairs, C_Item.GetItemInfoInstant, pcall
-local SendChatMessage, BNSendWhisper, wipe = C_ChatInfo.SendChatMessage, BNSendWhisper, table.wipe
+local BNSendWhisper, wipe = BNSendWhisper, table.wipe -- note to self: BNSendWhisper will be replaced by C_BattleNet.SendWhisper in future WoW versions
 
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
-local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")-- ...existing code...
+local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local CURRENT_DB_VERSION = 1 -- increment when breaking changes are made
 
 -- defaults for options
@@ -36,7 +36,7 @@ local defaults = {
 local db -- used for shorthand and for resetting the options to defaults
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- not any "classic" version of the game
 local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria Classic
-local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "Classic" versions of the game
+local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "classic" versions of the game
 isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
 local playerName = UnitName("player")
 local PriceAnswerSentMessages = {} -- table to track sent messages to prevent loops in whispers
@@ -375,6 +375,6 @@ function PriceAnswer:SendResponse(event, msg, target, ...)
 		local bnSenderID = select(13, ...)
 		BNSendWhisper(bnSenderID, msg)
 	else
-		SendChatMessage(msg, channel, nil, channel == "WHISPER" and target or nil)
+		CTL:SendChatMessage("NORMAL", "PATSM", msg, channel, nil, channel == "WHISPER" and target or nil)
 	end
 end
