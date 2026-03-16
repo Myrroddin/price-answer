@@ -1,7 +1,7 @@
 -- upvalue globals
 local LibStub, pairs, GetItemInfoInstant, pcall = LibStub, pairs, C_Item.GetItemInfoInstant, pcall
-local BNSendWhisper, wipe = BNSendWhisper, wipe -- note to self: BNSendWhisper will be replaced by C_BattleNet.SendWhisper in future WoW versions
-local strtrim, strsub, strmatch, gsub = strtrim, strsub, strmatch, gsub
+local BNSendWhisper, wipe = C_BattleNet.SendWhisper, wipe
+local strtrim, strsub, strmatch, strlen, gsub = strtrim, strsub, strmatch, strlen, gsub
 local select, InCombatLockdown, UnitAffectingCombat = select, InCombatLockdown, UnitAffectingCombat
 local Settings, StaticPopupDialogs, StaticPopup_Show = Settings, StaticPopupDialogs, StaticPopup_Show
 local ACCEPT, DEFAULT = ACCEPT, DEFAULT
@@ -11,8 +11,6 @@ local TSM_API = assert(TSM_API, "PriceAnswer requires TradeSkillMaster")
 local GetCustomPriceValue = TSM_API.GetCustomPriceValue
 local IsPriceSourceValid = TSM_API.IsPriceSourceValid
 local ToItemString = TSM_API.ToItemString
-local GetPriceSourceKeys = TSM_API.GetPriceSourceKeys
-local GetPriceSourceDescription = TSM_API.GetPriceSourceDescription
 local CTL = assert(ChatThrottleLib, "PriceAnswer requires ChatThrottleLib")
 
 -- addon creation
@@ -180,14 +178,14 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
 	-- convert to a TSM item string "i:12345"
 	local itemString
-	if TSM_API and TSM_API.ToItemString then
-		itemString = TSM_API.ToItemString(tostring(tail))
+	if ToItemString then
+		itemString = ToItemString(tostring(tail))
 		if not itemString then
-			itemString = TSM_API.ToItemString(tostring(itemCount))
+			itemString = ToItemString(tostring(itemCount))
 			if itemString then itemCount = 1 end
 		end
 		if not itemString and itemID then
-			itemString = TSM_API.ToItemString(tostring(itemID))
+			itemString = ToItemString(tostring(itemID))
 			if not itemString then
 				itemString = "i:" .. tostring(itemID)
 			end
