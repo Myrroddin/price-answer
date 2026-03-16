@@ -63,7 +63,7 @@ local events = {
 	["CHAT_MSG_WHISPER"]				= true,
 	["CHAT_MSG_BN_WHISPER"]				= true,
 	["CHAT_MSG_RAID_WARNING"]			= true,
-	["CHAT_MSG_INSTANCE_CHAT"]			= isMists or isMainline,
+	["CHAT_MSG_INSTANCE_CHAT"]			= true,
 	["CHAT_MSG_COMMUNITIES_CHANNEL"]	= isMainline
 }
 

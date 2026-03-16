@@ -3,7 +3,7 @@ local GetAddOnMetadata, TSM_API, LibStub = C_AddOns.GetAddOnMetadata, TSM_API, L
 local strlen, ENABLE, DISABLE, JUST_OR = strlen, ENABLE, DISABLE, JUST_OR
 local SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER = SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER
 local RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL = RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL
-local isMainline, isMists = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE, WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
+local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
 local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
@@ -81,11 +81,9 @@ function PriceAnswer:GetOptions()
 								["CHAT_MSG_RAID"] = RAID,
 								["CHAT_MSG_WHISPER"] = WHISPER,
 								["CHAT_MSG_BN_WHISPER"] = BN_WHISPER,
-								["CHAT_MSG_RAID_WARNING"] = RAID_WARNING
+								["CHAT_MSG_RAID_WARNING"] = RAID_WARNING,
+								["CHAT_MSG_INSTANCE_CHAT"] = INSTANCE_CHAT
 							}
-							if isMists or isMainline then
-								channels["CHAT_MSG_INSTANCE_CHAT"] = INSTANCE_CHAT
-							end
 							if isMainline then
 								channels["CHAT_MSG_COMMUNITIES_CHANNEL"] = CLUB_FINDER_COMMUNITIES
 							end
@@ -142,7 +140,7 @@ function PriceAnswer:GetOptions()
 						{ key = "CHAT_MSG_PARTY", name = PARTY, order = 50, values = { WHISPER = WHISPER, PARTY = PARTY } },
 						{ key = "CHAT_MSG_RAID", name = RAID, order = 60, values = { WHISPER = WHISPER, RAID = RAID } },
 						{ key = "CHAT_MSG_RAID_WARNING", name = RAID_WARNING, order = 70, values = { WHISPER = WHISPER, RAID = RAID, RAID_WARNING = RAID_WARNING } },
-						{ key = "CHAT_MSG_INSTANCE_CHAT", name = INSTANCE_CHAT, order = 80, values = { WHISPER = WHISPER, INSTANCE_CHAT = INSTANCE_CHAT }, hidden = function() return not (isMists or isMainline) end, disabled = function() return not (isMists or isMainline) end }
+						{ key = "CHAT_MSG_INSTANCE_CHAT", name = INSTANCE_CHAT, order = 80, values = { WHISPER = WHISPER, INSTANCE_CHAT = INSTANCE_CHAT } }
 					}
 					local args = {}
 					for i = 1, #channelOptions do
