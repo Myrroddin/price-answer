@@ -48,6 +48,7 @@ local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is o
 isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
 local playerName = UnitName("player")
 local PriceAnswerSentMessages = {} -- table to track sent message hashes to prevent loops in whispers
+local categoryID -- for the options menu
 local function GetMessageHash(message, sender)
 	return tostring(message) .. "::" .. tostring(sender)
 end
@@ -105,7 +106,7 @@ function PriceAnswer:OnInitialize()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("PriceAnswer", options)
 
 	-- register options with WoW's Interface\AddOns\ UI
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("PriceAnswer", L["Price Answer"])
+	categoryID = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("PriceAnswer", L["Price Answer"])
 
 	-- create and register slash command
 	self:RegisterChatCommand("priceanswer", "ChatCommand")
@@ -137,7 +138,7 @@ end
 
 -- handle slash commands
 function PriceAnswer:ChatCommand()
-	Settings.OpenToCategory(L["Price Answer"])
+	Settings.OpenToCategory(categoryID)
 end
 
 -- secure hook ChatThrottleLib:SendChatMessage for testing purposes when the user sends themself a message
