@@ -23,6 +23,7 @@ local defaults = {
 	profile = {
 		enableAddOn = true,
 		formatLargeNumbers = true,
+		disableInCombat = true,
 		trigger = "price",
 		replyChannel = {
 			["*"] = "WHISPER"
@@ -207,14 +208,21 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local oeCopper = self:GetItemValue("oerealm", itemString, itemCount)
 
 	-- default to TSM values, fallback to other sources as needed, returns 0 if no value is found
-	dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
-	dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
-	dbrecentCopper = dbrecentCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
+	dbminbuyoutCopper = dbminbuyoutCopper
+	or self:GetItemValue("aucminbuyout", itemString, itemCount)
+	or self:GetItemValue("atrvalue", itemString, itemCount)
+	or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+	dbmarketCopper = dbmarketCopper
+	or self:GetItemValue("aucmarket", itemString, itemCount)
+	dbrecentCopper = dbrecentCopper
+	or self:GetItemValue("aucappraiser", itemString, itemCount)
 
 	-- non-Vanilla Classic Era
 	if isClassicEra and not isSeason then
 		-- force other sources for vanilla Classic Era since TSM doesn't have pricing data for it, returns 0 if no value is found
-		dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+		dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount)
+		or self:GetItemValue("atrvalue", itemString, itemCount)
+		or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
 		dbmarketCopper = self:GetItemValue("aucmarket", itemString, itemCount)
 		dbrecentCopper = self:GetItemValue("aucappraiser", itemString, itemCount)
 		-- these values are not available in vanilla Classic Era
@@ -346,7 +354,7 @@ end
 -- Generalized event handler
 function PriceAnswer:HandleChatEvent(event, ...)
 	-- hard exit if in combat to prevent tainting issues
-	if InCombatLockdown() or UnitAffectingCombat("player") then return end
+	if db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player")) then return end
 
 	local incomingMessage, senderName = ...
 	local hash = GetMessageHash(incomingMessage, senderName)
@@ -375,7 +383,7 @@ end
 -- Helper to send response via correct channel
 function PriceAnswer:SendResponse(event, msg, target, ...)
 	-- hard exit if in combat to prevent tainting issues
-	if InCombatLockdown() or UnitAffectingCombat("player") then return end
+	if db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player")) then return end
 
 	local channel = db.replyChannel[event] or "WHISPER"
 	if event == "CHAT_MSG_BN_WHISPER" then

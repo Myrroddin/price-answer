@@ -48,8 +48,16 @@ function PriceAnswer:GetOptions()
 					end
 				end
 			},
-			formatLargeNumbers = {
+			disableInCombat = {
 				order = 30,
+				name = L["Disable in combat"],
+				desc = L["Prevents the AddOn from responding to messages while you are in combat"],
+				type = "toggle",
+				get = function() return db.disableInCombat end,
+				set = function(_, value) db.disableInCombat = value end
+			},
+			formatLargeNumbers = {
+				order = 40,
 				name = L["Format large gold numbers"],
 				desc = L["Turns 9999g into 9,999g"],
 				type = "toggle",
@@ -57,12 +65,12 @@ function PriceAnswer:GetOptions()
 				set = function(_, value) db.formatLargeNumbers = value end
 			},
 			lineBreak2 = {
-				order = 40,
+				order = 50,
 				type = "header",
 				name = ""
 			},
 			incomingMessagesTab = {
-				order = 50,
+				order = 60,
 				name = L["Incoming messages"],
 				type = "group",
 				args = {
@@ -128,7 +136,7 @@ function PriceAnswer:GetOptions()
 				}
 			},
 			outgoingMessagesTab = {
-				order = 60,
+				order = 70,
 				type = "group",
 				name = L["Outgoing messages"],
 				args = function()
@@ -160,7 +168,7 @@ function PriceAnswer:GetOptions()
 				end
 			},
 			tsmOptionsTab = {
-				order = 70,
+				order = 80,
 				name = L["TSM price sources"],
 				type = "group",
 				args = {
@@ -184,7 +192,7 @@ function PriceAnswer:GetOptions()
 				}
 			},
 			helpTab = {
-				order = 80,
+				order = 90,
 				name = HELP_LABEL,
 				type = "group",
 				args = {
