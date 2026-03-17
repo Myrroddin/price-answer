@@ -133,14 +133,12 @@ function PriceAnswer:GetOptions()
 				name = L["Outgoing messages"],
 				args = function()
 					local channelOptions = {
-						{ key = "CHAT_MSG_SAY", name = SAY, order = 10, values = { WHISPER = WHISPER, SAY = SAY } },
-						{ key = "CHAT_MSG_YELL", name = YELL, order = 20, values = { WHISPER = WHISPER, YELL = YELL } },
-						{ key = "CHAT_MSG_GUILD", name = GUILD, order = 30, values = { WHISPER = WHISPER, GUILD = GUILD } },
-						{ key = "CHAT_MSG_OFFICER", name = OFFICER, order = 40, values = { WHISPER = WHISPER, OFFICER = OFFICER } },
-						{ key = "CHAT_MSG_PARTY", name = PARTY, order = 50, values = { WHISPER = WHISPER, PARTY = PARTY } },
-						{ key = "CHAT_MSG_RAID", name = RAID, order = 60, values = { WHISPER = WHISPER, RAID = RAID } },
-						{ key = "CHAT_MSG_RAID_WARNING", name = RAID_WARNING, order = 70, values = { WHISPER = WHISPER, RAID = RAID, RAID_WARNING = RAID_WARNING } },
-						{ key = "CHAT_MSG_INSTANCE_CHAT", name = INSTANCE_CHAT, order = 80, values = { WHISPER = WHISPER, INSTANCE_CHAT = INSTANCE_CHAT } }
+						{ key = "CHAT_MSG_GUILD", name = GUILD, order = 10, values = { WHISPER = WHISPER, GUILD = GUILD } },
+						{ key = "CHAT_MSG_OFFICER", name = OFFICER, order = 20, values = { WHISPER = WHISPER, OFFICER = OFFICER } },
+						{ key = "CHAT_MSG_PARTY", name = PARTY, order = 30, values = { WHISPER = WHISPER, PARTY = PARTY } },
+						{ key = "CHAT_MSG_RAID", name = RAID, order = 40, values = { WHISPER = WHISPER, RAID = RAID } },
+						{ key = "CHAT_MSG_RAID_WARNING", name = RAID_WARNING, order = 50, values = { WHISPER = WHISPER, RAID = RAID, RAID_WARNING = RAID_WARNING } },
+						{ key = "CHAT_MSG_INSTANCE_CHAT", name = INSTANCE_CHAT, order = 60, values = { WHISPER = WHISPER, INSTANCE_CHAT = INSTANCE_CHAT } }
 					}
 					local args = {}
 					for i = 1, #channelOptions do
