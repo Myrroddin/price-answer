@@ -248,7 +248,7 @@ function PriceAnswer:GetOptions()
 					senderTSMQ = {
 						order = 100,
 						type = "description",
-						name = "* " .. L["Q: Does the person sending the price chack need TradeSkillMaster for Price Answer to work?"]
+						name = "* " .. L["Q: Does the person requesting a price check need TradeSkillMaster for Price Answer to work?"]
 					},
 					senderTSMA = {
 						order = 110,

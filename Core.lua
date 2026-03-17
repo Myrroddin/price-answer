@@ -208,29 +208,50 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local oeCopper = self:GetItemValue("oerealm", itemString, itemCount)
 
 	-- default to TSM values, fallback to other sources as needed, returns 0 if no value is found
-	dbminbuyoutCopper = dbminbuyoutCopper
-	or self:GetItemValue("aucminbuyout", itemString, itemCount)
-	or self:GetItemValue("atrvalue", itemString, itemCount)
-	or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
-	dbmarketCopper = dbmarketCopper
-	or self:GetItemValue("aucmarket", itemString, itemCount)
-	dbrecentCopper = dbrecentCopper
-	or self:GetItemValue("aucappraiser", itemString, itemCount)
+	local function FirstNonZero(...)
+		for i = 1, select("#", ...) do
+			local v = select(i, ...)
+			if v and v > 0 then
+				return v
+			end
+		end
+		return 0
+	end
+	dbminbuyoutCopper = FirstNonZero(
+		dbminbuyoutCopper,
+		self:GetItemValue("aucminbuyout", itemString, itemCount),
+		self:GetItemValue("atrvalue", itemString, itemCount),
+		self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+	)
+	dbmarketCopper = FirstNonZero(
+		dbmarketCopper,
+		self:GetItemValue("aucmarket", itemString, itemCount)
+	)
+	dbrecentCopper = FirstNonZero(
+		dbrecentCopper,
+		self:GetItemValue("aucappraiser", itemString, itemCount)
+	)
 
 	-- non-Vanilla Classic Era
 	if isClassicEra and not isSeason then
 		-- force other sources for vanilla Classic Era since TSM doesn't have pricing data for it, returns 0 if no value is found
-		dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount)
-		or self:GetItemValue("atrvalue", itemString, itemCount)
-		or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
-		dbmarketCopper = self:GetItemValue("aucmarket", itemString, itemCount)
-		dbrecentCopper = self:GetItemValue("aucappraiser", itemString, itemCount)
+		dbminbuyoutCopper = FirstNonZero(
+			self:GetItemValue("aucminbuyout", itemString, itemCount),
+			self:GetItemValue("atrvalue", itemString, itemCount),
+			self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+		)
+		dbmarketCopper = FirstNonZero(
+			self:GetItemValue("aucmarket", itemString, itemCount)
+		)
+		dbrecentCopper = FirstNonZero(
+			self:GetItemValue("aucappraiser", itemString, itemCount)
+		)
 		-- these values are not available in vanilla Classic Era
 		dbregionmarketavgCopper = 0
 		dbhistoricalCopper = 0
 		dbregionhistoricalCopper = 0
 	elseif not isMainline then
-		-- only for retail WoW, from Oribos Exchange
+		-- Oribos Exchange is Retail-only; disable for non-Retail clients
 		oeCopper = 0
 	end
 
