@@ -29,13 +29,14 @@ Price Answer requires **you** to have [TradeSkillMaster](https://www.tradeskillm
 |----------------------------|-----------------------------|----------------------------------------|
 | Retail (Mainline)          | All TSM sources             | Auctionator, AHDB, Oribos Exchange     |
 | Mists of Pandaria Classic  | All TSM sources             | Auctionator, AHDB                      |
-| Season of Discovery        | All TSM sources             | Auctionator, AHDB                      |
-| Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, AHDB                      |
-| Anniversary                | All TSM sources             | Auctionator, AHDB                      |
+| Season of Discovery        | All TSM sources             | Auctionator, Auctioneer, AHDB          |
+| Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, Auctioneer, AHDB          |
+| BCC Anniversary            | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | Classic Era (vanilla)      | Limited TSM sources         | Auctionator, Auctioneer, AHDB          |
 
 **Notes:**
-- Oribos Exchange is supported in Retail/Mainline only.
+- Auctioneer for TBC Anniversary requires either [Auctioneer BCC Fix](https://www.curseforge.com/wow/addons/auctioneer-bcc-fix-unofficial) or [Auctioneer Crusade](https://www.curseforge.com/wow/addons/auctioneer-crusade).
+- Auctioneer for Classic Era, Hardcore, Fresh, and Seasons requires the [original Auctioneer](https://www.curseforge.com/wow/addons/auctioneer) AddOn.
 - External price sources are used if TSM data is unavailable or you choose not to use the TSM desktop app.
 - External price sources are mapped to the equivalent TSM price sources where possible. Not all price sources are available for all World of Warcraft versions, regardless of additional addons.
 - Vanilla Classic Era requires an external addon to provide price data to TSM. Only `crafting` and `destroy` from TSM are directly available, although with the usual validity restrictions as with all WoW versions.
@@ -62,7 +63,7 @@ Price Answer requires **you** to have [TradeSkillMaster](https://www.tradeskillm
 
 ### Auctioneer
 
-Supported in all variants of Classic Era, provided the variants use the original auction house functionality from before the patch 8.3 rework, and does not function for Mists Classic or mainline/retail.
+Supported in all variants of Classic Era, provided the variants use the original auction house functionality from before the patch 8.3 rework, and does not function for The Burning Crusade Anniversary (see the **Notes:** below the compatibility chart), Mists Classic, or mainline/retail.
 
 - Provides a minimum buyout, i.e., the least expensive single auction of an item. Mapped to TSM's minimum buyout (`dbminbuyout`).
 - Provides a trending market value of an item over time. Mapped to TSM's market value (`dbmarket`).
