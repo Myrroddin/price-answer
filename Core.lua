@@ -49,10 +49,35 @@ isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
 local playerName = UnitName("player")
 local PriceAnswerSentMessages = {} -- table to track sent message hashes to prevent loops in whispers
 local categoryID -- for the options menu
+
+-- build a unique hash for a message/sender pair to prevent duplicate replies
 local function GetMessageHash(message, sender)
 	return tostring(message) .. "::" .. tostring(sender)
 end
 
+-- return the first value > 0 from a list of price sources, or 0 if none are valid
+local function FirstNonZero(...)
+	for i = 1, select("#", ...) do
+		local v = select(i, ...)
+		if v and v > 0 then
+			return v
+		end
+	end
+	return 0
+end
+
+-- attempt to resolve a valid itemID from a value (link, ID, or name)
+local function tryGetItemID(val)
+	if not val then return nil end
+	local ok, result = pcall(GetItemInfoInstant, val)
+	if ok and result then return result end
+	ok, result = pcall(GetItemInfoInstant, tonumber(val))
+	if ok and result then return result end
+	return nil
+end
+
+-- chat events the addon listens to; values determine if the event is valid for the current client
+-- (e.g. communities only exist on Retail)
 local events = {
 	["CHAT_MSG_CHANNEL"]				= true,
 	["CHAT_MSG_SAY"]					= true,
@@ -86,7 +111,6 @@ function PriceAnswer:OnInitialize()
 		}
 		StaticPopup_Show("PRICEANSWER_RESET")
 		self.db:ResetDB(DEFAULT)
-		self.db.global.current_db_version = CURRENT_DB_VERSION
 	end
 	db = self.db.profile
 
@@ -126,11 +150,12 @@ function PriceAnswer:OnDisable()
 	wipe(PriceAnswerSentMessages) -- clear the sent messages table
 end
 
--- reset the SV database
+-- handle AceDB profile callbacks; fully reset DB only on explicit profile reset
 function PriceAnswer:RefreshConfig(callback)
+	-- reset database if version is missing or outdated (used for breaking changes between releases)
+	-- defaults.global.current_db_version is authoritative, so ResetDB() restores the correct version
 	if callback == "OnProfileReset" then
 		self.db:ResetDB(DEFAULT)
-		self.db.global.current_db_version = CURRENT_DB_VERSION
 	end
 	db = self.db.profile
 	wipe(PriceAnswerSentMessages) -- clear sent messages on profile change/reset
@@ -141,7 +166,7 @@ function PriceAnswer:ChatCommand()
 	Settings.OpenToCategory(categoryID)
 end
 
--- secure hook ChatThrottleLib:SendChatMessage for testing purposes when the user sends themself a message
+-- hook outgoing addon messages to track self-sent whispers (prevents feedback loops during testing)
 hooksecurefunc(CTL, "SendChatMessage", function(_, prefix, message, _, _, senderName)
 	if not prefix or prefix ~= "PATSM" then return end
 	if not senderName or senderName ~= playerName then return end -- only track self/test messages
@@ -151,35 +176,29 @@ hooksecurefunc(CTL, "SendChatMessage", function(_, prefix, message, _, _, sender
 end)
 
 -- chat messages event handlers
--- no need to duplicate code for every event
+-- unified handler for all registered chat events
 function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	-- pattern for "trigger N item" incoming chat messages
 	-- item can be an itemLink EX: ["|cff0070dd|Hitem:63470::::::::53:257::2:1:4198:2:28:1199:9:35:::::|h[Missing Diplomat's Pauldrons]|h|r"]
 	-- or item can be an itemID EX: 63470
 	-- or item can be an item name EX: Missing Diplomat's Pauldrons
 	-- the quantity N is optional and defaults to 1 if not provided or is less than 1
+	-- ensure message starts with the configured trigger (handles escaped "?" edge case)
 	local pattern = "^(%d*)%s*(.*)$"
-	local incomingMessageTrim = strtrim(strsub(incomingMessage, strlen(L[db.trigger])+1)," \r\n")
+	local trigger = L[db.trigger] or db.trigger
+	local incomingMessageTrim = strtrim(strsub(incomingMessage, strlen(trigger)+1)," \r\n")
 	local itemCount, tail = strmatch(incomingMessageTrim, pattern)
 
-	itemCount = itemCount and itemCount:trim()
-	tail = tail and tail:trim()
-
-	-- Helper to try getting itemID from multiple sources
-	local function tryGetItemID(val)
-		if not val then return nil end
-		local ok, result = pcall(GetItemInfoInstant, val)
-		if ok and result then return result end
-		ok, result = pcall(GetItemInfoInstant, tonumber(val))
-		if ok and result then return result end
-		return nil
-	end
+	itemCount = itemCount and strtrim(itemCount)
+	tail = tail and strtrim(tail)
 
 	local itemID = tryGetItemID(tail) or tryGetItemID(itemCount)
 
 	-- convert to a TSM item string "i:12345"
 	local itemString
-	itemString = ToItemString(tostring(tail))
+	if tail and tail ~= "" then
+		itemString = ToItemString(tail)
+	end
 	if not itemString then
 		itemString = ToItemString(tostring(itemCount))
 		if itemString then itemCount = 1 end
@@ -189,6 +208,11 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		if not itemString then
 			itemString = "i:" .. tostring(itemID)
 		end
+	end
+
+	-- no valid item could be resolved; return empty messages to prevent sending incorrect data
+	if not itemString then
+		return "", ""
 	end
 
 	itemCount = tonumber(itemCount) or 1
@@ -208,15 +232,6 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local oeCopper = self:GetItemValue("oerealm", itemString, itemCount)
 
 	-- default to TSM values, fallback to other sources as needed, returns 0 if no value is found
-	local function FirstNonZero(...)
-		for i = 1, select("#", ...) do
-			local v = select(i, ...)
-			if v and v > 0 then
-				return v
-			end
-		end
-		return 0
-	end
 	dbminbuyoutCopper = FirstNonZero(
 		dbminbuyoutCopper,
 		self:GetItemValue("aucminbuyout", itemString, itemCount),
@@ -232,7 +247,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		self:GetItemValue("aucappraiser", itemString, itemCount)
 	)
 
-	-- non-Vanilla Classic Era
+	-- Vanilla Classic Era: TSM pricing is unavailable, so force alternate auction sources and zero unsupported values
 	if isClassicEra and not isSeason then
 		-- force other sources for vanilla Classic Era since TSM doesn't have pricing data for it, returns 0 if no value is found
 		dbminbuyoutCopper = FirstNonZero(
@@ -266,7 +281,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local dbrecentString = self:ConvertToHumanReadable(dbrecentCopper)
 	local oeString = self:ConvertToHumanReadable(oeCopper)
 
-	-- build the outgoing message
+	-- build response messages (split into two lines to avoid chat length limits and improve readability)
 	local outgoingMessageOne, outgoingMessageTwo = "", ""
 
 	if db.tsmSources["dbminbuyout"] then
@@ -281,7 +296,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		end
 	end
 
-	if db.tsmSources["oerealm"] then
+	if isMainline and db.tsmSources["oerealm"] then
 		if oeString then
 			outgoingMessageOne = outgoingMessageOne .. " " .. L["3-Day Realm Avg"] .. " " .. oeString
 		end
@@ -324,13 +339,13 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	end
 
 	-- trim dead spaces
-	outgoingMessageOne = outgoingMessageOne:trim()
-	outgoingMessageTwo = outgoingMessageTwo:trim()
+	outgoingMessageOne = strtrim(outgoingMessageOne)
+	outgoingMessageTwo = strtrim(outgoingMessageTwo)
 
 	return outgoingMessageOne, outgoingMessageTwo
 end
 
--- TradeSkillMaster price functions
+-- safely fetch a TSM price value; returns 0 if the source is invalid or unavailable
 function PriceAnswer:GetItemValue(price_source, item_string, item_count)
 	if not item_string or not price_source then return 0 end
 	if not IsPriceSourceValid or not IsPriceSourceValid(price_source) then return 0 end
@@ -342,7 +357,7 @@ function PriceAnswer:GetItemValue(price_source, item_string, item_count)
 	return 0
 end
 
--- TradeSkillMaster has some weird control characters in TSM_API.FormatMoneyString, build our own version
+-- convert copper to a readable gold/silver/copper string (avoids TSM formatting issues)
 function PriceAnswer:ConvertToHumanReadable(num_copper)
 	local gold_string, silver_string, copper_string = "", "", ""
 	local gold, silver, copper
@@ -401,7 +416,7 @@ function PriceAnswer:HandleChatEvent(event, ...)
 	self:RegisterEvent(event, "HandleChatEvent")
 end
 
--- Helper to send response via correct channel
+-- send a response using the configured channel, handling BN whispers separately
 function PriceAnswer:SendResponse(event, msg, target, ...)
 	-- hard exit if in combat to prevent tainting issues
 	if db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player")) then return end
