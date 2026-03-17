@@ -1,6 +1,6 @@
 -- upvalue globals
 local LibStub, pairs, GetItemInfoInstant, pcall = LibStub, pairs, C_Item.GetItemInfoInstant, pcall
-local BNSendWhisper, wipe = C_BattleNet.SendWhisper, wipe
+local BNSendWhisper, wipe = BNSendWhisper or C_BattleNet.SendWhisper, wipe
 local strtrim, strsub, strmatch, strlen, gsub = strtrim, strsub, strmatch, strlen, gsub
 local select, InCombatLockdown, UnitAffectingCombat = select, InCombatLockdown, UnitAffectingCombat
 local Settings, StaticPopupDialogs, StaticPopup_Show = Settings, StaticPopupDialogs, StaticPopup_Show
@@ -42,7 +42,6 @@ local defaults = {
 -- local variables
 local db -- used for shorthand and for resetting the options to defaults
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE -- retail World of Warcraft
-local isMists = WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC -- Mists of Pandaria Classic
 local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC -- Classic Era
 local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is only available in "classic" versions of the game
 isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
@@ -105,7 +104,7 @@ function PriceAnswer:OnInitialize()
 
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("PriceAnswer", options)
 
-	-- register options with WoW's Interface\AddOns\ UI
+	-- register options with WoW's Settings\AddOns\ UI
 	categoryID = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("PriceAnswer", L["Price Answer"])
 
 	-- create and register slash command
@@ -179,17 +178,15 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
 	-- convert to a TSM item string "i:12345"
 	local itemString
-	if ToItemString then
-		itemString = ToItemString(tostring(tail))
+	itemString = ToItemString(tostring(tail))
+	if not itemString then
+		itemString = ToItemString(tostring(itemCount))
+		if itemString then itemCount = 1 end
+	end
+	if not itemString and itemID then
+		itemString = ToItemString(tostring(itemID))
 		if not itemString then
-			itemString = ToItemString(tostring(itemCount))
-			if itemString then itemCount = 1 end
-		end
-		if not itemString and itemID then
-			itemString = ToItemString(tostring(itemID))
-			if not itemString then
-				itemString = "i:" .. tostring(itemID)
-			end
+			itemString = "i:" .. tostring(itemID)
 		end
 	end
 
@@ -198,29 +195,25 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		itemCount = 1
 	end
 
-	-- cache price results per item per message
-	local priceCache = {}
-	local function getCachedPrice(source)
-		if priceCache[source] ~= nil then return priceCache[source] end
-		priceCache[source] = self:GetItemValue(source, itemString, itemCount)
-		return priceCache[source]
-	end
-	local craftingCopper = getCachedPrice("crafting")
-	local destroyCopper = getCachedPrice("destroy")
-	local dbminbuyoutCopper = getCachedPrice("dbminbuyout")
-	local dbmarketCopper = getCachedPrice("dbmarket")
-	local dbregionmarketavgCopper = getCachedPrice("dbregionmarketavg")
-	local dbhistoricalCopper = getCachedPrice("dbhistorical")
-	local dbregionhistoricalCopper = getCachedPrice("dbregionhistorical")
-	local dbrecentCopper = getCachedPrice("dbrecent")
-	local oeCopper = getCachedPrice("oerealm") -- only for retail WoW, from Oribos Exchange
+    -- get values in copper coins
+    local craftingCopper = self:GetItemValue("crafting", itemString, itemCount)
+    local destroyCopper = self:GetItemValue("destroy", itemString, itemCount)
+    local dbminbuyoutCopper = self:GetItemValue("dbminbuyout", itemString, itemCount)
+    local dbmarketCopper = self:GetItemValue("dbmarket", itemString, itemCount)
+    local dbregionmarketavgCopper = self:GetItemValue("dbregionmarketavg", itemString, itemCount)
+    local dbhistoricalCopper = self:GetItemValue("dbhistorical", itemString, itemCount)
+    local dbregionhistoricalCopper = self:GetItemValue("dbregionhistorical", itemString, itemCount)
+    local dbrecentCopper = self:GetItemValue("dbrecent", itemString, itemCount)
+	local oeCopper = self:GetItemValue("oerealm", itemString, itemCount)
 
-	-- non-Vanilla Classic Era, Mists Classic, and Mainline
-	if isSeason or isMists or isMainline then
-		-- min buyout, provided by TSM ("dbminbuyout"), Auctionator ("atrvalue"), Auction House DataBase ("ahdbminbuyout")
-		dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
-	elseif isClassicEra and not isSeason then
-		-- we need external price sources for vanilla Classic Era: Auctioneer, Auctionator, or Auction House DataBase
+	-- default to TSM values, fallback to other sources as needed, returns 0 if no value is found
+	dbminbuyoutCopper = dbminbuyoutCopper or self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
+	dbmarketCopper = dbmarketCopper or self:GetItemValue("aucmarket", itemString, itemCount)
+	dbrecentCopper = dbrecentCopper or self:GetItemValue("aucappraiser", itemString, itemCount)
+
+	-- non-Vanilla Classic Era
+	if isClassicEra and not isSeason then
+		-- force other sources for vanilla Classic Era since TSM doesn't have pricing data for it, returns 0 if no value is found
 		dbminbuyoutCopper = self:GetItemValue("aucminbuyout", itemString, itemCount) or self:GetItemValue("atrvalue", itemString, itemCount) or self:GetItemValue("ahdbminbuyout", itemString, itemCount)
 		dbmarketCopper = self:GetItemValue("aucmarket", itemString, itemCount)
 		dbrecentCopper = self:GetItemValue("aucappraiser", itemString, itemCount)
@@ -228,6 +221,8 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		dbregionmarketavgCopper = 0
 		dbhistoricalCopper = 0
 		dbregionhistoricalCopper = 0
+	elseif not isMainline then
+		-- only for retail WoW, from Oribos Exchange
 		oeCopper = 0
 	end
 
