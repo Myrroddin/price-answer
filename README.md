@@ -29,6 +29,7 @@ Price Answer requires **you** to have [TradeSkillMaster](https://www.tradeskillm
 |----------------------------|-----------------------------|----------------------------------------|
 | Retail (Mainline)          | All TSM sources             | Auctionator, AHDB, Oribos Exchange     |
 | Mists of Pandaria Classic  | All TSM sources             | Auctionator, AHDB                      |
+| Titan Reforged (China)     | All TSM sources             | Auctionator, AHDB                      |
 | Season of Discovery        | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | BCC Anniversary            | All TSM sources             | Auctionator, Auctioneer, AHDB          |
