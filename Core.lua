@@ -195,8 +195,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	-- the quantity N is optional and defaults to 1 if not provided or is less than 1
 	-- ensure message starts with the configured trigger (handles escaped "?" edge case)
 	local pattern = "^(%d*)%s*(.*)$"
-	local trigger = L[db.trigger] or db.trigger
-	local incomingMessageTrim = strtrim(strsub(incomingMessage, strlen(trigger)+1)," \r\n")
+	local incomingMessageTrim = strtrim(strsub(incomingMessage, strlen(db.trigger)+1)," \r\n")
 	local itemCount, tail = strmatch(incomingMessageTrim, pattern)
 
 	itemCount = itemCount and strtrim(itemCount)
@@ -411,7 +410,8 @@ function PriceAnswer:HandleChatEvent(event, ...)
 		if now - t > 600 then PriceAnswerSentMessages[k] = nil end
 	end
 
-	if not incomingMessage:find("^" .. gsub(L[db.trigger], "^%?", "%%%?")) then return end
+	local trigger = db.trigger:lower()
+	if incomingMessage:sub(1, #trigger):lower() ~= trigger then return end
 
 	self:UnregisterEvent(event)
 

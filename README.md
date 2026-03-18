@@ -97,7 +97,7 @@ Players can use the following commands to trigger price checks. Thanks to Bearth
 - `price Nitem`
 - `price item`
 
-`N` is an optional quantity (default 1), `item` is a numerical itemID, itemLink, or item name. If an item name is sent, **you** must have the item in your inventory.
+`N` is an optional quantity (default 1), `item` is a numerical itemID, itemLink, or item name. If an item name is used, the item must already be cached by the game client. If it is not cached, use an item link or itemID instead.
 
 ## Chat channels monitored
 
