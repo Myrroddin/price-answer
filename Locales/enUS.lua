@@ -36,6 +36,7 @@ L["Q: Why isn't this addon built into TradeSkillMaster?"] = true
 L["Sources' gold values sent in the reply, if valid"] = true
 L["The trigger"] = true
 L["The trigger must be one or more non-space characters, a word, or a phrase (can contain spaces between words in the phrase)"] = true
+L["TradeSkillMaster is required. Disabling Price Answer."] = true
 L["TSM price sources"] = true
 L["Turns 9999g into 9,999g"] = true
 L["Watched chat channels"] = true

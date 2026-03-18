@@ -3,20 +3,18 @@ local LibStub, pairs, GetItemInfoInstant, pcall = LibStub, pairs, C_Item.GetItem
 local BNSendWhisper, wipe = BNSendWhisper or C_BattleNet.SendWhisper, wipe
 local strtrim, strsub, strmatch, strlen, gsub = strtrim, strsub, strmatch, strlen, gsub
 local select, InCombatLockdown, UnitAffectingCombat = select, InCombatLockdown, UnitAffectingCombat
-local Settings, StaticPopupDialogs, StaticPopup_Show = Settings, StaticPopupDialogs, StaticPopup_Show
-local ACCEPT, DEFAULT = ACCEPT, DEFAULT
-local GetTime, hooksecurefunc = GetTime, hooksecurefunc
-local assert, UnitName = assert, UnitName
-local TSM_API = assert(TSM_API, "PriceAnswer requires TradeSkillMaster")
-local GetCustomPriceValue = TSM_API.GetCustomPriceValue
-local IsPriceSourceValid = TSM_API.IsPriceSourceValid
-local ToItemString = TSM_API.ToItemString
-local CTL = assert(ChatThrottleLib, "PriceAnswer requires ChatThrottleLib")
+local StaticPopupDialogs, StaticPopup_Show = StaticPopupDialogs, StaticPopup_Show
+local ACCEPT, DEFAULT, SendChatMessage = ACCEPT, DEFAULT, C_ChatInfo.SendChatMessage
+local GetTime, hooksecurefunc, UnitName = GetTime, hooksecurefunc, UnitName
+local TSM_API, CTL = _G.TSM_API, _G.ChatThrottleLib
+local GetCustomPriceValue = TSM_API and TSM_API.GetCustomPriceValue
+local IsPriceSourceValid = TSM_API and TSM_API.IsPriceSourceValid
+local ToItemString = TSM_API and TSM_API.ToItemString
 
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
-local CURRENT_DB_VERSION = 1 -- increment when breaking changes are made
+local CURRENT_DB_VERSION = 2 -- increment when breaking changes are made
 
 -- defaults for options
 local defaults = {
@@ -35,9 +33,7 @@ local defaults = {
 			["*"] = true
 		}
 	},
-	global = {
-		current_db_version = CURRENT_DB_VERSION
-	}
+	global = {}
 }
 
 -- local variables
@@ -48,7 +44,6 @@ local isSeason = C_Seasons and C_Seasons.GetActiveSeason() -- C_Seasons API is o
 isSeason = isSeason and isSeason >= 2 -- Season of Discovery or later
 local playerName = UnitName("player")
 local PriceAnswerSentMessages = {} -- table to track sent message hashes to prevent loops in whispers
-local categoryID -- for the options menu
 
 -- build a unique hash for a message/sender pair to prevent duplicate replies
 local function GetMessageHash(message, sender)
@@ -95,13 +90,28 @@ local events = {
 
 -- main Ace3 Functions
 function PriceAnswer:OnInitialize()
+	-- TSM is required; delay chat print slightly so it isn't lost in login spam
+	if not TSM_API then
+		local msg = L["TradeSkillMaster is required. Disabling Price Answer."]
+
+		C_Timer.After(2, function()
+			self:Print(msg)
+		end)
+
+		UIErrorsFrame:AddMessage(msg, 1.0, 0.1, 0.1, 5)
+
+		self:SetEnabledState(false)
+		return
+	end
 	self.db = LibStub("AceDB-3.0"):New("PriceAnswerDB", defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
 
-	-- Only reset if DB version is outdated
-	if (not self.db.global.current_db_version) or (self.db.global.current_db_version < CURRENT_DB_VERSION) then
+	-- Only reset if DB version is missing or outdated
+	local oldVersion = self.db.global.current_db_version
+
+	if not oldVersion or oldVersion < CURRENT_DB_VERSION then
 		StaticPopupDialogs["PRICEANSWER_RESET"] = {
 			text = L["Price Answer has been updated. The settings have been reset to defaults."],
 			button1 = ACCEPT,
@@ -110,8 +120,11 @@ function PriceAnswer:OnInitialize()
 			hideOnEscape = true
 		}
 		StaticPopup_Show("PRICEANSWER_RESET")
+
 		self.db:ResetDB(DEFAULT)
 	end
+	-- Ensure DB version is always set (even if no reset occurred)
+	self.db.global.current_db_version = CURRENT_DB_VERSION
 	db = self.db.profile
 
 	-- set enabled/disabled state as per user prefs
@@ -130,7 +143,7 @@ function PriceAnswer:OnInitialize()
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("PriceAnswer", options)
 
 	-- register options with WoW's Settings\AddOns\ UI
-	categoryID = LibStub("AceConfigDialog-3.0"):AddToBlizOptions("PriceAnswer", L["Price Answer"])
+	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("PriceAnswer", L["Price Answer"])
 
 	-- create and register slash command
 	self:RegisterChatCommand("priceanswer", "ChatCommand")
@@ -150,30 +163,27 @@ function PriceAnswer:OnDisable()
 	wipe(PriceAnswerSentMessages) -- clear the sent messages table
 end
 
--- handle AceDB profile callbacks; fully reset DB only on explicit profile reset
-function PriceAnswer:RefreshConfig(callback)
-	-- reset database if version is missing or outdated (used for breaking changes between releases)
-	-- defaults.global.current_db_version is authoritative, so ResetDB() restores the correct version
-	if callback == "OnProfileReset" then
-		self.db:ResetDB(DEFAULT)
-	end
+-- handle AceDB profile callbacks
+function PriceAnswer:RefreshConfig()
 	db = self.db.profile
-	wipe(PriceAnswerSentMessages) -- clear sent messages on profile change/reset
+	wipe(PriceAnswerSentMessages)
 end
 
 -- handle slash commands
 function PriceAnswer:ChatCommand()
-	Settings.OpenToCategory(categoryID)
+	LibStub("AceConfigDialog-3.0"):Open("PriceAnswer")
 end
 
 -- hook outgoing addon messages to track self-sent whispers (prevents feedback loops during testing)
-hooksecurefunc(CTL, "SendChatMessage", function(_, prefix, message, _, _, senderName)
-	if not prefix or prefix ~= "PATSM" then return end
-	if not senderName or senderName ~= playerName then return end -- only track self/test messages
-	local hash = GetMessageHash(message, senderName)
-	if PriceAnswerSentMessages[hash] then return end
-	PriceAnswerSentMessages[hash] = GetTime() -- store timestamp for cleanup
-end)
+if CTL and CTL.SendChatMessage then
+	hooksecurefunc(CTL, "SendChatMessage", function(_, prefix, message, _, _, senderName)
+		if not prefix or prefix ~= "PATSM" then return end
+		if not senderName or senderName ~= playerName then return end
+		local hash = GetMessageHash(message, senderName)
+		if PriceAnswerSentMessages[hash] then return end
+		PriceAnswerSentMessages[hash] = GetTime()
+	end)
+end
 
 -- chat messages event handlers
 -- unified handler for all registered chat events
@@ -426,6 +436,11 @@ function PriceAnswer:SendResponse(event, msg, target, ...)
 		local bnSenderID = select(13, ...)
 		BNSendWhisper(bnSenderID, msg)
 	else
-		CTL:SendChatMessage("NORMAL", "PATSM", msg, channel, nil, channel == "WHISPER" and target or nil)
+		if CTL and CTL.SendChatMessage then
+			CTL:SendChatMessage("NORMAL", "PATSM", msg, channel, nil, channel == "WHISPER" and target or nil)
+		else
+			-- fallback (optional but recommended)
+			SendChatMessage(msg, channel, nil, channel == "WHISPER" and target or nil)
+		end
 	end
 end

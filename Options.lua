@@ -1,28 +1,106 @@
 -- Localize frequently used globals and constants for performance
-local GetAddOnMetadata, TSM_API, LibStub = C_AddOns.GetAddOnMetadata, TSM_API, LibStub
-local strlen, ENABLE, DISABLE, JUST_OR = strlen, ENABLE, DISABLE, JUST_OR
+local GetAddOnMetadata, LibStub = C_AddOns.GetAddOnMetadata, LibStub
+local strlen, strtrim, ENABLE, DISABLE, JUST_OR = strlen, strtrim, ENABLE, DISABLE, JUST_OR
 local SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER = SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER
 local RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL = RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+local TSM_API = _G.TSM_API
+local GetPriceSourceDescription = TSM_API and TSM_API.GetPriceSourceDescription
 
 local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
 
+local options
+
 -- Cache TSM price source descriptions at startup
-local TSMPriceSourceDescriptions = {}
-local TSMPriceSourceKeys = TSM_API.GetPriceSourceKeys and TSM_API.GetPriceSourceKeys() or {
+local TSMPriceSourceKeys = {
+	-- we don't need to cache every TSM price source, just the ones that are relevant to Price Answer
 	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent"
 }
-for _, key in ipairs(TSMPriceSourceKeys) do
-	if TSM_API.GetPriceSourceDescription then
-		TSMPriceSourceDescriptions[key] = TSM_API.GetPriceSourceDescription(key)
+-- helper function to get the description for a TSM price source
+local CachedSources
+
+local function MapTSMKeyToDescription()
+	if CachedSources then return CachedSources end
+
+	local sources = {}
+	local hasDesc = GetPriceSourceDescription
+
+	for _, key in ipairs(TSMPriceSourceKeys) do
+		sources[key] = hasDesc and (hasDesc(key) or key) or key
 	end
+
+	if isMainline then
+		local key = "oerealm"
+		sources[key] = hasDesc and (hasDesc(key) or key) or key
+	end
+
+	CachedSources = sources
+	return sources
+end
+
+-- returns the list of chat events monitored by the addon (built once per call, includes retail-only channels)
+local function GetWatchedChannelValues()
+	local channels = {
+		["CHAT_MSG_CHANNEL"] = GLOBAL_CHANNELS,
+		["CHAT_MSG_SAY"] = SAY,
+		["CHAT_MSG_YELL"] = YELL,
+		["CHAT_MSG_GUILD"] = GUILD,
+		["CHAT_MSG_OFFICER"] = OFFICER,
+		["CHAT_MSG_PARTY"] = PARTY,
+		["CHAT_MSG_RAID"] = RAID,
+		["CHAT_MSG_WHISPER"] = WHISPER,
+		["CHAT_MSG_BN_WHISPER"] = BN_WHISPER,
+		["CHAT_MSG_RAID_WARNING"] = RAID_WARNING,
+		["CHAT_MSG_INSTANCE_CHAT"] = INSTANCE_CHAT
+	}
+	if isMainline then
+		channels["CHAT_MSG_COMMUNITIES_CHANNEL"] = CLUB_FINDER_COMMUNITIES
+	end
+	return channels
+end
+
+local function BuildOutgoingMessageArgs(db)
+	local channelOptions = {
+		{ key = "CHAT_MSG_GUILD", name = GUILD, order = 10, values = { WHISPER = WHISPER, GUILD = GUILD } },
+		{ key = "CHAT_MSG_OFFICER", name = OFFICER, order = 20, values = { WHISPER = WHISPER, OFFICER = OFFICER } },
+		{ key = "CHAT_MSG_PARTY", name = PARTY, order = 30, values = { WHISPER = WHISPER, PARTY = PARTY } },
+		{ key = "CHAT_MSG_RAID", name = RAID, order = 40, values = { WHISPER = WHISPER, RAID = RAID } },
+		{ key = "CHAT_MSG_RAID_WARNING", name = RAID_WARNING, order = 50, values = { WHISPER = WHISPER, RAID = RAID, RAID_WARNING = RAID_WARNING } },
+		{ key = "CHAT_MSG_INSTANCE_CHAT", name = INSTANCE_CHAT, order = 60, values = { WHISPER = WHISPER, INSTANCE_CHAT = INSTANCE_CHAT } }
+	}
+
+	local args = {}
+
+	for i = 1, #channelOptions do
+		local opt = channelOptions[i]
+		args[opt.key] = {
+			type = "select",
+			style = "dropdown",
+			name = opt.name,
+			desc = L["How do you want to answer this channel"],
+			order = opt.order,
+			values = opt.values,
+			get = function()
+				return db.replyChannel and db.replyChannel[opt.key]
+			end,
+			set = function(_, value)
+				db.replyChannel = db.replyChannel or {}
+				db.replyChannel[opt.key] = value
+			end,
+			hidden = opt.hidden,
+			disabled = opt.disabled
+		}
+	end
+
+	return args
 end
 
 function PriceAnswer:GetOptions()
+	if options then return options end -- build options table once and reuse it
 	local db = self.db.profile
-	local options = {
+	options = {
 		type = "group",
 		order = 10,
 		name = L["Price Answer"] .. " " .. addon_version,
@@ -78,31 +156,14 @@ function PriceAnswer:GetOptions()
 						type = "multiselect",
 						name = L["Watched chat channels"],
 						order = 10,
-						values = function()
-							local channels = {
-								["CHAT_MSG_CHANNEL"] = GLOBAL_CHANNELS,
-								["CHAT_MSG_SAY"] = SAY,
-								["CHAT_MSG_YELL"] = YELL,
-								["CHAT_MSG_GUILD"] = GUILD,
-								["CHAT_MSG_OFFICER"] = OFFICER,
-								["CHAT_MSG_PARTY"] = PARTY,
-								["CHAT_MSG_RAID"] = RAID,
-								["CHAT_MSG_WHISPER"] = WHISPER,
-								["CHAT_MSG_BN_WHISPER"] = BN_WHISPER,
-								["CHAT_MSG_RAID_WARNING"] = RAID_WARNING,
-								["CHAT_MSG_INSTANCE_CHAT"] = INSTANCE_CHAT
-							}
-							if isMainline then
-								channels["CHAT_MSG_COMMUNITIES_CHANNEL"] = CLUB_FINDER_COMMUNITIES
-							end
-							return channels
-						end,
+						values = GetWatchedChannelValues,
 						get = function(_, key_name)
-							return db.watchedChatChannels[key_name]
+							return db.watchedChatChannels and db.watchedChatChannels[key_name]
 						end,
 						set = function(_, key_name, value)
+							db.watchedChatChannels = db.watchedChatChannels or {}
 							db.watchedChatChannels[key_name] = value
-							if db.watchedChatChannels[key_name] then
+							if value then
 								self:RegisterEvent(key_name, "HandleChatEvent")
 							else
 								self:UnregisterEvent(key_name)
@@ -121,7 +182,7 @@ function PriceAnswer:GetOptions()
 						order = 30,
 						width = "full",
 						validate = function(_, value)
-							value = value:trim()
+							value = strtrim(value)
 							value = strlen(value) > 0 and value or nil
 							if value then
 								return true
@@ -131,7 +192,7 @@ function PriceAnswer:GetOptions()
 							end
 						end,
 						get = function() return db.trigger end,
-						set = function(_, value) db.trigger = value:trim() end
+						set = function(_, value) db.trigger = strtrim(value) end
 					}
 				}
 			},
@@ -139,33 +200,7 @@ function PriceAnswer:GetOptions()
 				order = 70,
 				type = "group",
 				name = L["Outgoing messages"],
-				args = function()
-					local channelOptions = {
-						{ key = "CHAT_MSG_GUILD", name = GUILD, order = 10, values = { WHISPER = WHISPER, GUILD = GUILD } },
-						{ key = "CHAT_MSG_OFFICER", name = OFFICER, order = 20, values = { WHISPER = WHISPER, OFFICER = OFFICER } },
-						{ key = "CHAT_MSG_PARTY", name = PARTY, order = 30, values = { WHISPER = WHISPER, PARTY = PARTY } },
-						{ key = "CHAT_MSG_RAID", name = RAID, order = 40, values = { WHISPER = WHISPER, RAID = RAID } },
-						{ key = "CHAT_MSG_RAID_WARNING", name = RAID_WARNING, order = 50, values = { WHISPER = WHISPER, RAID = RAID, RAID_WARNING = RAID_WARNING } },
-						{ key = "CHAT_MSG_INSTANCE_CHAT", name = INSTANCE_CHAT, order = 60, values = { WHISPER = WHISPER, INSTANCE_CHAT = INSTANCE_CHAT } }
-					}
-					local args = {}
-					for i = 1, #channelOptions do
-						local opt = channelOptions[i]
-						args[opt.key] = {
-							type = "select",
-							style = "dropdown",
-							name = opt.name,
-							desc = L["How do you want to answer this channel"],
-							order = opt.order,
-							values = opt.values,
-							get = function() return db.replyChannel[opt.key] end,
-							set = function(_, value) db.replyChannel[opt.key] = value end,
-							hidden = opt.hidden,
-							disabled = opt.disabled
-						}
-					end
-					return args
-				end
+				args = BuildOutgoingMessageArgs(db)
 			},
 			tsmOptionsTab = {
 				order = 80,
@@ -176,18 +211,14 @@ function PriceAnswer:GetOptions()
 						type = "multiselect",
 						name = L["Sources' gold values sent in the reply, if valid"],
 						order = 10,
-						values = function()
-							local sources = {}
-							for _, key in ipairs(TSMPriceSourceKeys) do
-								sources[key] = TSMPriceSourceDescriptions[key] or key
-							end
-							if isMainline and TSM_API.GetPriceSourceDescription then
-								sources["oerealm"] = TSM_API.GetPriceSourceDescription("oerealm")
-							end
-							return sources
+						values = function() return MapTSMKeyToDescription() end,
+						get = function(_, key_name)
+							return db.tsmSources and db.tsmSources[key_name]
 						end,
-						get = function(_, key_name) return db.tsmSources[key_name] end,
-						set = function(_, key_name, value) db.tsmSources[key_name] = value end
+						set = function(_, key_name, value)
+							db.tsmSources = db.tsmSources or {}
+							db.tsmSources[key_name] = value
+						end
 					}
 				}
 			},

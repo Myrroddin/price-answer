@@ -19,10 +19,11 @@ externals:
 
 ignore:
   - Libs/LibStub/tests
+  - Libs/LibStub/LibStub.toc
   - Libs/CallbackHandler-1.0/CallbackHandler-1.0.xml
-  - README.md
   - Libs/ChatThrottleLib/CHANGES.txt
   - Libs/ChatThrottleLib/ChatThrottleLib.toc
   - Libs/ChatThrottleLib/ChatThrottleLib.xml
   - Libs/ChatThrottleLib/ChatThrottleLibStats.lua
   - Libs/ChatThrottleLib/README.txt
+  - README.md
