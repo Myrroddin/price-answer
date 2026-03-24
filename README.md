@@ -7,11 +7,12 @@ Automatically reply to price checks using TradeSkillMaster or external addon dat
 - [Description](#description)
 - [Requirements](#requirements)
 - [Supported WoW versions and price sources](#supported-wow-versions-and-price-sources)
+  - [Notes](#notes)
 - [TradeSkillMaster prices](#tradeskillmaster-prices)
 - [Price sources priority](#price-sources-priority)
-	- [Auctionator and Auction House DataBase (AHDB)](#auctionator-and-auction-house-database-ahdb)
-	- [Auctioneer](#auctioneer)
-	- [Oribos Exchange](#oribos-exchange)
+  - [Auctionator and Auction House DataBase (AHDB)](#auctionator-and-auction-house-database-ahdb)
+  - [Auctioneer](#auctioneer)
+  - [Oribos Exchange](#oribos-exchange)
 - [Open the settings](#open-the-settings)
 - [Asking for a price check](#asking-for-a-price-check)
 - [Chat channels monitored](#chat-channels-monitored)
@@ -36,13 +37,13 @@ Users requesting price checks do **not** need TSM.
 | BCC Anniversary            | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | Classic Era (vanilla)      | Limited TSM sources         | Auctionator, Auctioneer, AHDB          |
 
-**Notes**
+### Notes
 
 - Auctioneer for TBC Anniversary requires either [Auctioneer BCC Fix](https://www.curseforge.com/wow/addons/auctioneer-bcc-fix-unofficial) or [Auctioneer Crusade](https://www.curseforge.com/wow/addons/auctioneer-crusade).
 - Auctioneer for Classic Era, Hardcore, Fresh, and Seasons requires the [original Auctioneer](https://www.curseforge.com/wow/addons/auctioneer).
-- External price sources are used if TSM data is unavailable or if you are not using the TSM Desktop Application.
+- External price sources are used when TSM price values are unavailable or zero, but TradeSkillMaster is still required.
 - External price sources are mapped to the equivalent TSM price sources where possible. Not all price sources are available for all World of Warcraft versions, regardless of additional addons.
-- Vanilla Classic Era requires an external addon to provide price data to TSM. Only `crafting` and `destroy` from TSM are directly available, although with the usual validity restrictions as with all WoW versions.
+- Vanilla Classic Era requires an external addon to provide price data to TSM. Only `crafting` and `destroy` are reliably available from TSM in Classic Era; other values depend on external addons, with the usual validity restrictions as with all WoW versions.
 
 ## TradeSkillMaster prices
 
@@ -80,7 +81,8 @@ Provides:
 
 ### Oribos Exchange
 
-- Provides 3-day realm average price (`oerealm`). Supported in Retail/Mainline only.
+- Provides 3-day realm average price (`oerealm`).
+- Supported in Retail/Mainline only.
 
 ## Open the settings
 
@@ -90,14 +92,14 @@ Provides:
 
 ## Asking for a price check
 
-Players can use the following commands to trigger price checks. Thanks to Bearthazar on Curseforge for the better pattern matching in version 1.09, where spaces do not matter. (**Exception:** when passing both N and a numerical **itemID**, a space **must** exist between N and the itemID.) The trigger `price` can be changed in the options.
+Players can use the following commands to trigger price checks. Spaces do not matter. (**Exception:** when passing both N and a numerical **itemID**, a space **must** exist between N and the itemID.) The trigger `price` can be changed in the options.
 
 - `price N item`
 - `priceNitem`
 - `price Nitem`
 - `price item`
 
-`N` is an optional quantity (default 1), `item` is a numerical itemID, itemLink, or item name. If an item name is used, the item must already be cached by the game client. If it is not cached, use an item link or itemID instead.
+`N` is an optional quantity (default 1), `item` is an itemID, itemLink, or item name. If an item name is used, the item must be cached by the game client (either from the current session or existing cache data). If it is not cached, use an item link or itemID instead.
 
 ## Chat channels monitored
 

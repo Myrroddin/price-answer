@@ -17,7 +17,7 @@
 ## X-Author-Server: Lightbringer
 ## Version: @project-version@
 
-## X-License: Copyright (c) 2022-2026 Paul Vandersypen All Rights Rserved
+## X-License: Copyright (c) 2022-2026 Paul Vandersypen All Rights Reserved
 ## X-Localizations: enUS, deDE, esMX, esES, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
 ## Category: Auctions
 ## Category-deDE: Auktionen
@@ -36,6 +36,7 @@
 ## X-Curse-Project-ID: 661710
 ## X-WoWI-ID: 26382
 ## X-Wago-ID: lQNlxYNe
+## IconTexture: Interface\Icons\INV_Misc_Coin_01
 
 ## RequiredDeps: TradeSkillMaster
 ## OptionalDeps: LibStub, CallbackHandler-1.0, ChatThrottleLib, Ace3, LibAboutPanel-2.0, Auctionator, Auc-Advanced, OribosExchange, AuctionDB
