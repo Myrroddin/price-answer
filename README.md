@@ -31,11 +31,10 @@ Users requesting price checks do **not** need TSM.
 |----------------------------|-----------------------------|----------------------------------------|
 | Retail (Mainline)          | All TSM sources             | Auctionator, AHDB, Oribos Exchange     |
 | Mists of Pandaria Classic  | All TSM sources             | Auctionator, AHDB                      |
-| Titan Reforged (China)     | All TSM sources             | Auctionator, AHDB                      |
 | Season of Discovery        | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | BCC Anniversary            | All TSM sources             | Auctionator, Auctioneer, AHDB          |
-| Classic Era (vanilla)      | Limited TSM sources         | Auctionator, Auctioneer, AHDB          |
+| Classic Era (vanilla)      | None                        | Auctionator, Auctioneer, AHDB          |
 
 ### Notes
 
@@ -43,7 +42,7 @@ Users requesting price checks do **not** need TSM.
 - Auctioneer for Classic Era, Hardcore, Fresh, and Seasons requires the [original Auctioneer](https://www.curseforge.com/wow/addons/auctioneer).
 - External price sources are used when TSM price values are unavailable or zero, but TradeSkillMaster is still required.
 - External price sources are mapped to the equivalent TSM price sources where possible. Not all price sources are available for all World of Warcraft versions, regardless of additional addons.
-- Vanilla Classic Era requires an external addon to provide price data to TSM. Only `crafting` and `destroy` are reliably available from TSM in Classic Era; other values depend on external addons, with the usual validity restrictions as with all WoW versions.
+- Vanilla Classic Era requires an external addon to provide price data to TSM.
 
 ## TradeSkillMaster prices
 
