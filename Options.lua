@@ -4,10 +4,15 @@ local strlen, strtrim, ENABLE, DISABLE, JUST_OR = strlen, strtrim, ENABLE, DISAB
 local SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER = SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER
 local RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL = RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
-local TSM_API = _G.TSM_API
+local TSM_API = rawget(_G, "TSM_API")
 local GetPriceSourceDescription = TSM_API and TSM_API.GetPriceSourceDescription
 
 local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
+---@cast PriceAnswer PriceAnswer
+---@class PriceAnswer
+---@field RegisterEvent fun(self: PriceAnswer, event: string, method: string|function)
+---@field UnregisterEvent fun(self: PriceAnswer, event: string)
+---@field Print fun(self: PriceAnswer, ...: any)
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
 
@@ -97,6 +102,7 @@ local function BuildOutgoingMessageArgs(db)
 	return args
 end
 
+---@diagnostic disable-next-line: inject-field
 function PriceAnswer:GetOptions()
 	if options then return options end -- build options table once and reuse it
 	local db = self.db.profile

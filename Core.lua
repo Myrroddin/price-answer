@@ -1,16 +1,26 @@
 -- upvalue globals
-local LibStub, pairs, GetItemInfoInstant, pcall = LibStub, pairs, C_Item.GetItemInfoInstant, pcall
-local BNSendWhisper, wipe = BNSendWhisper or C_BattleNet.SendWhisper, wipe
+local LibStub, pairs, GetItemInfoInstant, pcall, rawget = LibStub, pairs, C_Item.GetItemInfoInstant, pcall, rawget
+local legacyBNSendWhisper = rawget(_G, "BNSendWhisper")
+local BNSendWhisper, wipe = (C_BattleNet and C_BattleNet.SendWhisper) or legacyBNSendWhisper, wipe
 local strtrim, strsub, strmatch, strlower = strtrim, strsub, strmatch, strlower
 local select, InCombatLockdown, UnitAffectingCombat = select, InCombatLockdown, UnitAffectingCombat
 local DEFAULT, SendChatMessage, GetItemInfo = DEFAULT, C_ChatInfo.SendChatMessage, C_Item.GetItemInfo
 local GetTime, tonumber, tostring, type = GetTime, tonumber, tostring, type
-local TSM_API, CTL = _G.TSM_API, _G.ChatThrottleLib
+local TSM_API, CTL = rawget(_G, "TSM_API"), rawget(_G, "ChatThrottleLib")
 local GetCustomPriceValue = TSM_API and TSM_API.GetCustomPriceValue
 local ToItemString = TSM_API and TSM_API.ToItemString
 local GOLD_AMOUNT_SYMBOL, SILVER_AMOUNT_SYMBOL, COPPER_AMOUNT_SYMBOL = GOLD_AMOUNT_SYMBOL, SILVER_AMOUNT_SYMBOL, COPPER_AMOUNT_SYMBOL
 local floor, format, FormatLargeNumber = floor, format, FormatLargeNumber
 
+---@class PriceAnswer: AceAddon
+---@field db table
+---@field GetOptions fun(self: PriceAnswer): table
+---@field RegisterChatCommand fun(self: PriceAnswer, command: string, method: string|function)
+---@field RegisterEvent fun(self: PriceAnswer, event: string, method: string|function)
+---@field UnregisterEvent fun(self: PriceAnswer, event: string)
+---@field UnregisterAllEvents fun(self: PriceAnswer)
+---@field AboutOptionsTable fun(self: PriceAnswer, addonName: string): table
+---@field Print fun(self: PriceAnswer, ...: any)
 -- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
@@ -41,7 +51,8 @@ local db, player_name
 player_name = UnitName("player")
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
-local isSeason = C_Seasons and C_Seasons.GetActiveSeason()
+local C_Seasons_API = rawget(_G, "C_Seasons")
+local isSeason = C_Seasons_API and C_Seasons_API.GetActiveSeason and C_Seasons_API.GetActiveSeason()
 isSeason = isSeason and isSeason >= 2
 local PriceAnswerSentMessages = {}
 
