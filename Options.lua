@@ -1,5 +1,5 @@
 -- Localize frequently used globals and constants for performance
-local GetAddOnMetadata, LibStub = C_AddOns.GetAddOnMetadata, LibStub
+local GetAddOnMetadata, LibStub, rawget = C_AddOns.GetAddOnMetadata, LibStub, rawget
 local strlen, strtrim, ENABLE, DISABLE, JUST_OR = strlen, strtrim, ENABLE, DISABLE, JUST_OR
 local SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER = SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER
 local RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL = RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL
@@ -21,7 +21,7 @@ local options
 -- Cache TSM price source descriptions at startup
 local TSMPriceSourceKeys = {
 	-- we don't need to cache every TSM price source, just the ones that are relevant to Price Answer
-	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent"
+	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent", "vendorsell"
 }
 -- helper function to get the description for a TSM price source
 local CachedSources

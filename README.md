@@ -22,7 +22,7 @@ Automatically reply to price checks using TradeSkillMaster or external addon dat
 
 ## Requirements
 
-Price Answer requires **you** to have [TradeSkillMaster](https://support.tradeskillmaster.com/tsm-desktop-application/how-do-i-set-up-the-tsm-desktop-application) installed.  
+Price Answer requires **you** to have [TradeSkillMaster](https://support.tradeskillmaster.com/tsm-desktop-application/how-do-i-set-up-the-tsm-desktop-application) installed.
 Users requesting price checks do **not** need TSM.
 
 ## Supported WoW versions and price sources
@@ -34,7 +34,7 @@ Users requesting price checks do **not** need TSM.
 | Season of Discovery        | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, Auctioneer, AHDB          |
 | BCC Anniversary            | All TSM sources             | Auctionator, Auctioneer, AHDB          |
-| Classic Era (vanilla)      | None                        | Auctionator, Auctioneer, AHDB          |
+| Classic Era (vanilla)      | Limited                     | Auctionator, Auctioneer, AHDB          |
 
 ### Notes
 
@@ -54,6 +54,7 @@ Users requesting price checks do **not** need TSM.
 - Region historical (60-day extended regional market trend)
 - Crafting cost (at least one of your same-realm, same-faction characters must know the recipe)
 - Destroy (DE, milling, prospecting) value
+- Vendor sell (what an NPC will give you)
 
 ## Price sources priority
 

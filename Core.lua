@@ -321,6 +321,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local oerealm = 0
 	local craftingcost = 0
 	local destroyvalue = 0
+	local vendorvalue = 0
 
 	-- Step 3: Loop through the price sources in order of priority and assign the first valid price we find to the appropriate variable.
 	-- The price sources we check depend on the game version, as some sources are not available in certain versions.
@@ -347,7 +348,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	-- crafting cost and destroy value are available in all versions, so we check those for all versions as well
 	craftingcost = self:GetPriceFromSources("crafting", itemString, itemCount)
 	destroyvalue = self:GetPriceFromSources("destroy", itemString, itemCount)
-
+	vendorvalue = self:GetPriceFromSources("vendorsell", itemString, itemCount)
 	-- Step 4: Convert the price values (which are in copper) to a human readable gold/silver/copper format and build the outgoing message string
 	-- if a price value is 0 or nil, the return will be nil instead of an empty string
 	local dbminbuyoutString = self:ConvertToHumanReadable(dbminbuyout)
@@ -359,6 +360,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	local oeString = isMainline and self:ConvertToHumanReadable(oerealm)
 	local craftingCostString = self:ConvertToHumanReadable(craftingcost)
 	local destroyValueString = self:ConvertToHumanReadable(destroyvalue)
+	local vendorValueString = self:ConvertToHumanReadable(vendorvalue)
 
 	local out1, out2 = "", ""
 
@@ -393,7 +395,9 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	if db.tsmSources.destroy then
 		out2 = AppendField(out2, L["Disenchant/Mill/Prospect Value"], destroyValueString)
 	end
-
+	if db.tsmSources.vendorsell then
+		out2 = AppendField(out2, L["Sell to vendor"], vendorValueString)
+	end
 	out1 = strtrim(out1)
 	out2 = strtrim(out2)
 
