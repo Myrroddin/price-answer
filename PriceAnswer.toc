@@ -1,4 +1,4 @@
-## Interface: 120005, 50503, 20505, 11508
+## Interface: 120005, 50504, 20505, 11508
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
 ## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
@@ -18,7 +18,7 @@
 ## Version: @project-version@
 
 ## X-License: Copyright (c) 2022-2026 Paul Vandersypen All Rights Reserved
-## X-Localizations: enUS, deDE, esMX, esES, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
+## X-Localizations: enUS, deDE, esES, esMX, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
 ## Category: Auctions
 ## Category-deDE: Auktionen
 ## Category-esES: Subastas
@@ -45,8 +45,8 @@
 ## SavedVariables: PriceAnswerDB
 
 Libs\LibStub\LibStub.lua
-Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
-Libs\ChatThrottleLib\ChatThrottleLib.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+Libs\ChatThrottleLib\ChatThrottleLib.xml
 Libs\AceAddon-3.0\AceAddon-3.0.xml
 Libs\AceEvent-3.0\AceEvent-3.0.xml
 Libs\AceDB-3.0\AceDB-3.0.xml

@@ -1,31 +1,34 @@
 -- Localize frequently used globals and constants for performance
 local GetAddOnMetadata, LibStub, rawget = C_AddOns.GetAddOnMetadata, LibStub, rawget
+local ipairs = ipairs
 local strlen, strtrim, ENABLE, DISABLE, JUST_OR = strlen, strtrim, ENABLE, DISABLE, JUST_OR
 local SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER = SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER
 local RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL = RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL
+---@type boolean
+---@flavor-narrows retail
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 local TSM_API = rawget(_G, "TSM_API")
 local GetPriceSourceDescription = TSM_API and TSM_API.GetPriceSourceDescription
 
+---@type PriceAnswer
 local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
----@cast PriceAnswer PriceAnswer
----@class PriceAnswer
----@field RegisterEvent fun(self: PriceAnswer, event: string, method: string|function)
----@field UnregisterEvent fun(self: PriceAnswer, event: string)
----@field Print fun(self: PriceAnswer, ...: any)
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
-local addon_version = GetAddOnMetadata("PriceAnswer", "Version")
+local addon_version = GetAddOnMetadata("PriceAnswer", "Version") or ""
 
+---@type table?
 local options
 
 -- Cache TSM price source descriptions at startup
+---@type string[]
 local TSMPriceSourceKeys = {
 	-- we don't need to cache every TSM price source, just the ones that are relevant to Price Answer
 	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent", "vendorsell"
 }
 -- helper function to get the description for a TSM price source
+---@type table<string, string>?
 local CachedSources
 
+---@return table<string, string>
 local function MapTSMKeyToDescription()
 	if CachedSources then return CachedSources end
 
@@ -46,6 +49,7 @@ local function MapTSMKeyToDescription()
 end
 
 -- returns the list of chat events monitored by the addon (built once per call, includes retail-only channels)
+---@return table<string, string>
 local function GetWatchedChannelValues()
 	local channels = {
 		["CHAT_MSG_CHANNEL"] = GLOBAL_CHANNELS,
@@ -66,7 +70,18 @@ local function GetWatchedChannelValues()
 	return channels
 end
 
+---@class PriceAnswerChannelOption
+---@field key string
+---@field name string
+---@field order number
+---@field values table<string, string>
+---@field hidden boolean|fun(): boolean|nil
+---@field disabled boolean|fun(): boolean|nil
+
+---@param db PriceAnswerDBProfile
+---@return table<string, table>
 local function BuildOutgoingMessageArgs(db)
+	---@type PriceAnswerChannelOption[]
 	local channelOptions = {
 		{ key = "CHAT_MSG_GUILD", name = GUILD, order = 10, values = { WHISPER = WHISPER, GUILD = GUILD } },
 		{ key = "CHAT_MSG_OFFICER", name = OFFICER, order = 20, values = { WHISPER = WHISPER, OFFICER = OFFICER } },
@@ -102,7 +117,7 @@ local function BuildOutgoingMessageArgs(db)
 	return args
 end
 
----@diagnostic disable-next-line: inject-field
+---@return table
 function PriceAnswer:GetOptions()
 	if options then return options end -- build options table once and reuse it
 	local db = self.db.profile
@@ -188,7 +203,7 @@ function PriceAnswer:GetOptions()
 						order = 30,
 						width = "full",
 						validate = function(_, value)
-							value = strtrim(value)
+							value = type(value) == "string" and strtrim(value) or ""
 							value = strlen(value) > 0 and value or nil
 							if value then
 								return true
@@ -198,7 +213,9 @@ function PriceAnswer:GetOptions()
 							end
 						end,
 						get = function() return db.trigger end,
-						set = function(_, value) db.trigger = strtrim(value) end
+						set = function(_, value)
+							db.trigger = type(value) == "string" and strtrim(value) or db.trigger
+						end
 					}
 				}
 			},

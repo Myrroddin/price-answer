@@ -12,21 +12,46 @@ local ToItemString = TSM_API and TSM_API.ToItemString
 local GOLD_AMOUNT_SYMBOL, SILVER_AMOUNT_SYMBOL, COPPER_AMOUNT_SYMBOL = GOLD_AMOUNT_SYMBOL, SILVER_AMOUNT_SYMBOL, COPPER_AMOUNT_SYMBOL
 local floor, format, FormatLargeNumber = floor, format, FormatLargeNumber
 
----@class PriceAnswer: AceAddon
----@field db table
+---@class PriceAnswerDBProfile
+---@field enableAddOn boolean
+---@field formatLargeNumbers boolean
+---@field disableInCombat boolean
+---@field trigger string
+---@field replyChannel table<string, string>
+---@field tsmSources table<string, boolean>
+---@field watchedChatChannels table<string, boolean>
+
+---@class PriceAnswerDBGlobal: table<string, any>
+---@field current_db_version integer?
+
+---@class PriceAnswerDB: AceDBObject-3.0
+---@field profile PriceAnswerDBProfile
+---@field global PriceAnswerDBGlobal
+---@field RegisterCallback fun(target: table, event: string, method: string)
+
+---@class PriceAnswer: AceAddon, AceConsole-3.0, AceEvent-3.0, LibAboutPanel-2.0
+---@field db PriceAnswerDB
 ---@field GetOptions fun(self: PriceAnswer): table
+---@field GetOutgoingMessage fun(self: PriceAnswer, incomingMessage: string): string, string
+---@field GetPriceFromSources fun(self: PriceAnswer, sources: string|string[], itemString: string, itemQuantity: number): number
+---@field ConvertToHumanReadable fun(self: PriceAnswer, num_copper: number?): string?
+---@field SendResponse fun(self: PriceAnswer, event: string, msg: string, target: string, ...: any)
 ---@field RegisterChatCommand fun(self: PriceAnswer, command: string, method: string|function)
 ---@field RegisterEvent fun(self: PriceAnswer, event: string, method: string|function)
 ---@field UnregisterEvent fun(self: PriceAnswer, event: string)
 ---@field UnregisterAllEvents fun(self: PriceAnswer)
+---@field SetEnabledState fun(self: PriceAnswer, enabled: boolean?)
+---@field Enable fun(self: PriceAnswer)
+---@field Disable fun(self: PriceAnswer)
 ---@field AboutOptionsTable fun(self: PriceAnswer, addonName: string): table
 ---@field Print fun(self: PriceAnswer, ...: any)
 -- addon creation
-local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
+local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0") --[[@as PriceAnswer]]
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local CURRENT_DB_VERSION = 2
 
 -- defaults
+---@type { profile: PriceAnswerDBProfile, global: PriceAnswerDBGlobal }
 local defaults = {
 	profile = {
 		enableAddOn = true,
@@ -47,17 +72,30 @@ local defaults = {
 }
 
 -- locals
-local db, player_name
-player_name = UnitName("player")
+---@type PriceAnswerDBProfile!
+local db
+local player_name = UnitName("player")
+---@type boolean
+---@flavor-narrows retail
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+---@type boolean
+---@flavor-narrows classic_era
 local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
 local C_Seasons_API = rawget(_G, "C_Seasons")
 local isSeason = C_Seasons_API and C_Seasons_API.GetActiveSeason and C_Seasons_API.GetActiveSeason()
 isSeason = isSeason and isSeason >= 2
+---@type table<string, number>
 local PriceAnswerSentMessages = {}
 
 -- price sources for normalization logic based on game version
-local minBuyoutSources, marketValuesSources, recentValuesSources, regionMarketValuesSources = {}, {}, {}, {}
+---@type string[]
+local minBuyoutSources = {}
+---@type string[]
+local marketValuesSources = {}
+---@type string[]
+local recentValuesSources = {}
+---@type string[]
+local regionMarketValuesSources = {}
 if isClassicEra and not isSeason then
 	minBuyoutSources = {
 		"aucminbuyout",
@@ -87,33 +125,51 @@ regionMarketValuesSources = {
 }
 
 -- attempt to resolve a valid itemID from a value (link, ID, or name)
+---@param val string|number?
+---@return integer?
 local function tryGetItemID(val)
-	if (not val) or (strtrim(val) == "") then
+	if not val then
 		return nil
 	end
+
+	local value = tostring(val)
+	if strtrim(value) == "" then
+		return nil
+	end
+
 	-- val may be an itemLink or item name, attempt to get a valid itemID from it
-	local ok, result = pcall(GetItemInfoInstant, val)
-	if (ok and result) then
+	local ok, result = pcall(GetItemInfoInstant, value)
+	if ok and type(result) == "number" then
 		return result
 	end
+
 	-- val may be an itemID passed in as a string or number, attempt to get a valid itemID from it
-	ok, result = pcall(GetItemInfoInstant, tonumber(val))
-	if (ok and result) then
-		return result
+	local itemID = tonumber(value)
+	if itemID then
+		ok, result = pcall(GetItemInfoInstant, itemID)
+		if ok and type(result) == "number" then
+			return result
+		end
 	end
+
 	-- fallback: resolve item name via C_Item.GetItemInfo (requires cache), extract itemID from itemLink
-	local ok2, _, itemLink = pcall(GetItemInfo, val)
-	if (ok2 and itemLink) then
+	local ok2, _, itemLink = pcall(GetItemInfo, value)
+	if ok2 and type(itemLink) == "string" then
 		local itemIDFromLink = itemLink:match("item:(%d+)")
 		if itemIDFromLink then
 			return tonumber(itemIDFromLink)
 		end
 	end
+
 	-- failed to get a valid itemID from val
 	return nil
 end
 
 -- ensure a string does not start with a blank space
+---@param base string
+---@param label string
+---@param value string?
+---@return string
 local function AppendField(base, label, value)
 	if not value then return base end
 	if base ~= "" then
@@ -126,6 +182,8 @@ end
 -- ensures itemCount is a valid number, rounds it to the nearest whole integer using standard rounding rules
 -- (>= 0.5 rounds up, < 0.5 rounds down), and guarantees the result is at least 1
 -- returns the rounded integer value or 1 if the input is invalid or less than 1 after rounding
+---@param itemCount string|number?
+---@return integer
 local function TrueRound(itemCount)
 	local n = tonumber(itemCount)
 
@@ -143,6 +201,7 @@ local function TrueRound(itemCount)
 end
 
 -- events
+---@type table<string, boolean?>
 local events = {
 	["CHAT_MSG_CHANNEL"] = true,
 	["CHAT_MSG_SAY"] = true,
@@ -169,7 +228,7 @@ function PriceAnswer:OnInitialize()
 	end
 
 	-- set up the database and config
-	self.db = LibStub("AceDB-3.0"):New("PriceAnswerDB", defaults, true)
+	self.db = LibStub("AceDB-3.0"):New("PriceAnswerDB", defaults, true) --[[@as PriceAnswerDB]]
 	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
@@ -228,6 +287,8 @@ end
 
 --[[ MAIN LOGIC]]
 -- Step 1: Listen for chat messages in the appropriate channels and check if they start with the trigger word. If not, ignore them. If they do, continue to step 2.
+---@param event string
+---@param ... any
 function PriceAnswer:HandleChatEvent(event, ...)
 	if (db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player"))) then
 		return
@@ -242,6 +303,7 @@ function PriceAnswer:HandleChatEvent(event, ...)
 	end
 
 	local msg, sender = ...
+	if not msg or not sender then return end
 
 	local trigger = strlower(db.trigger)
 	if strlower(strsub(msg, 1, #trigger)) ~= trigger then return end
@@ -267,7 +329,12 @@ end
 
 -- Step 2: Parse the message to attempt to extract an itemString and quantity,
 -- then query TSM for the relevant price sources using the itemString and build the outgoing message based on the results
+---@param incomingMessage string
+---@return (string firstMessage, string secondMessage)
 function PriceAnswer:GetOutgoingMessage(incomingMessage)
+	if not ToItemString then
+		return "", ""
+	end
 	local pattern = "^(%d*)%s*(.*)$"
 	local incomingMessageTrim = strtrim(strsub(incomingMessage, #db.trigger + 1), " \r\n")
 	local itemCount, tail = strmatch(incomingMessageTrim, pattern)
@@ -286,12 +353,12 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 
 	-- attempt to build a TSM itemString ("i:12345") from the tail or itemCount, prioritizing the tail
 	local itemString = nil
-	local ok, result = pcall(ToItemString, tail)
+	local ok, result = pcall(ToItemString, tostring(tail))
 	if (ok and result) then
 		itemString = result
 	end
 	if (not itemString) then
-		ok, result = pcall(ToItemString, itemCount)
+		ok, result = pcall(ToItemString, tostring(itemCount))
 		if (ok and result) then
 			itemString = result
 		end
@@ -407,7 +474,14 @@ end
 
 -- Step 3: Pass in a table/string of price sources, the TSM itemString, and itemQuantity, and return the value of the item * quantity
 -- or 0 if no valid price is found from any of the sources
+---@param sources string|string[]
+---@param itemString string
+---@param itemQuantity number
+---@return number
 function PriceAnswer:GetPriceFromSources(sources, itemString, itemQuantity)
+	if not GetCustomPriceValue then
+		return 0
+	end
 	local okay, result = nil, nil
 	if type(sources) == "table" then
 		-- multiple sources passed in as a table, loop through them and attempt to get a price from each source in order of priority until we find a valid price
@@ -428,6 +502,8 @@ function PriceAnswer:GetPriceFromSources(sources, itemString, itemQuantity)
 end
 
 -- Step 4: Convert the price values (which are in copper) to a human readable 147g21s39c format, returning to Step 2 as a string or nil
+---@param num_copper number?
+---@return string?
 function PriceAnswer:ConvertToHumanReadable(num_copper)
 	local gold_string, silver_string, copper_string = "", "", ""
 	local gold, silver, copper
@@ -458,6 +534,10 @@ function PriceAnswer:ConvertToHumanReadable(num_copper)
 end
 
 -- Step 5: Send the outgoing message to the appropriate channel based on the event
+---@param event string
+---@param msg string
+---@param target string
+---@param ... any
 function PriceAnswer:SendResponse(event, msg, target, ...)
 	if (db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player"))) then
 		return
@@ -470,7 +550,9 @@ function PriceAnswer:SendResponse(event, msg, target, ...)
 
 	if event == "CHAT_MSG_BN_WHISPER" then
 		local id = select(13, ...)
-		BNSendWhisper(id, msg)
+		if BNSendWhisper then
+			BNSendWhisper(id, msg)
+		end
 	else
 		if CTL then
 			CTL:SendChatMessage("NORMAL", "PATSM", msg, channel, nil, channel == "WHISPER" and target or nil)
