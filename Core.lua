@@ -1,16 +1,69 @@
--- upvalue globals
-local LibStub, pairs, GetItemInfoInstant, pcall, rawget = LibStub, pairs, C_Item.GetItemInfoInstant, pcall, rawget
-local legacyBNSendWhisper = rawget(_G, "BNSendWhisper")
-local BNSendWhisper, wipe = (C_BattleNet and C_BattleNet.SendWhisper) or legacyBNSendWhisper, wipe
-local strtrim, strsub, strmatch, strlower = strtrim, strsub, strmatch, strlower
-local select, InCombatLockdown, UnitAffectingCombat = select, InCombatLockdown, UnitAffectingCombat
-local DEFAULT, SendChatMessage, GetItemInfo = DEFAULT, C_ChatInfo.SendChatMessage, C_Item.GetItemInfo
-local GetTime, tonumber, tostring, type = GetTime, tonumber, tostring, type
-local TSM_API, CTL = rawget(_G, "TSM_API"), rawget(_G, "ChatThrottleLib")
+-- constants
+local COPPER_AMOUNT_SYMBOL = COPPER_AMOUNT_SYMBOL
+local CURRENT_DB_VERSION = 2
+local DEFAULT = DEFAULT
+local GOLD_AMOUNT_SYMBOL = GOLD_AMOUNT_SYMBOL
+local LibStub = LibStub
+local SILVER_AMOUNT_SYMBOL = SILVER_AMOUNT_SYMBOL
+
+-- flavor guards
+---@type boolean
+---@flavor-narrows retail
+local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+
+---@type boolean
+---@flavor-narrows classic_era
+local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
+
+---@type boolean
+---@flavor-narrows classic
+local isMists = WOW_PROJECT_MISTS_CLASSIC and WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
+
+-- Lua functions
+local floor = floor
+local format = format
+local FormatLargeNumber = FormatLargeNumber
+local GetItemInfo = C_Item.GetItemInfo
+local GetItemInfoInstant = C_Item.GetItemInfoInstant
+local GetTime = GetTime
+local InCombatLockdown = InCombatLockdown
+local pairs = pairs
+local pcall = pcall
+local select = select
+local SendChatMessage = C_ChatInfo.SendChatMessage
+local strlower = strlower
+local strmatch = strmatch
+local strsub = strsub
+local strtrim = strtrim
+local tonumber = tonumber
+local tostring = tostring
+local type = type
+local UnitAffectingCombat = UnitAffectingCombat
+local wipe = wipe
+
+-- optional addon APIs
+local CTL = ChatThrottleLib
+local TSM_API = TSM_API
 local GetCustomPriceValue = TSM_API and TSM_API.GetCustomPriceValue
 local ToItemString = TSM_API and TSM_API.ToItemString
-local GOLD_AMOUNT_SYMBOL, SILVER_AMOUNT_SYMBOL, COPPER_AMOUNT_SYMBOL = GOLD_AMOUNT_SYMBOL, SILVER_AMOUNT_SYMBOL, COPPER_AMOUNT_SYMBOL
-local floor, format, FormatLargeNumber = floor, format, FormatLargeNumber
+
+-- version-specific Blizzard APIs
+local SendBattleNetWhisper
+if isMainline or isMists then
+	SendBattleNetWhisper = C_BattleNet.SendWhisper
+else
+	SendBattleNetWhisper = BNSendWhisper
+end
+
+local isSeason = false
+if not isMainline then
+	local season = C_Seasons.GetActiveSeason()
+	isSeason = season and season >= 2
+end
+
+-- external library object shapes used by this file
+---@class PriceAnswerDBGlobal
+---@field current_db_version integer?
 
 ---@class PriceAnswerDBProfile
 ---@field enableAddOn boolean
@@ -21,37 +74,22 @@ local floor, format, FormatLargeNumber = floor, format, FormatLargeNumber
 ---@field tsmSources table<string, boolean>
 ---@field watchedChatChannels table<string, boolean>
 
----@class PriceAnswerDBGlobal: table<string, any>
----@field current_db_version integer?
-
 ---@class PriceAnswerDB: AceDBObject-3.0
 ---@field profile PriceAnswerDBProfile
 ---@field global PriceAnswerDBGlobal
 ---@field RegisterCallback fun(target: table, event: string, method: string)
+---@field ResetDB fun(self: PriceAnswerDB, defaultProfile: string)
 
+-- addon creation
 ---@class PriceAnswer: AceAddon, AceConsole-3.0, AceEvent-3.0, LibAboutPanel-2.0
 ---@field db PriceAnswerDB
----@field GetOptions fun(self: PriceAnswer): table
----@field GetOutgoingMessage fun(self: PriceAnswer, incomingMessage: string): string, string
----@field GetPriceFromSources fun(self: PriceAnswer, sources: string|string[], itemString: string, itemQuantity: number): number
----@field ConvertToHumanReadable fun(self: PriceAnswer, num_copper: number?): string?
----@field SendResponse fun(self: PriceAnswer, event: string, msg: string, target: string, ...: any)
----@field RegisterChatCommand fun(self: PriceAnswer, command: string, method: string|function)
----@field RegisterEvent fun(self: PriceAnswer, event: string, method: string|function)
----@field UnregisterEvent fun(self: PriceAnswer, event: string)
----@field UnregisterAllEvents fun(self: PriceAnswer)
----@field SetEnabledState fun(self: PriceAnswer, enabled: boolean?)
+---@field SetEnabledState fun(self: PriceAnswer, state: boolean?)
 ---@field Enable fun(self: PriceAnswer)
 ---@field Disable fun(self: PriceAnswer)
----@field AboutOptionsTable fun(self: PriceAnswer, addonName: string): table
----@field Print fun(self: PriceAnswer, ...: any)
--- addon creation
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0") --[[@as PriceAnswer]]
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
-local CURRENT_DB_VERSION = 2
 
 -- defaults
----@type { profile: PriceAnswerDBProfile, global: PriceAnswerDBGlobal }
 local defaults = {
 	profile = {
 		enableAddOn = true,
@@ -72,29 +110,14 @@ local defaults = {
 }
 
 -- locals
----@type PriceAnswerDBProfile!
 local db
 local player_name = UnitName("player")
----@type boolean
----@flavor-narrows retail
-local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
----@type boolean
----@flavor-narrows classic_era
-local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
-local C_Seasons_API = rawget(_G, "C_Seasons")
-local isSeason = C_Seasons_API and C_Seasons_API.GetActiveSeason and C_Seasons_API.GetActiveSeason()
-isSeason = isSeason and isSeason >= 2
----@type table<string, number>
 local PriceAnswerSentMessages = {}
 
 -- price sources for normalization logic based on game version
----@type string[]
 local minBuyoutSources = {}
----@type string[]
 local marketValuesSources = {}
----@type string[]
 local recentValuesSources = {}
----@type string[]
 local regionMarketValuesSources = {}
 if isClassicEra and not isSeason then
 	minBuyoutSources = {
@@ -125,8 +148,6 @@ regionMarketValuesSources = {
 }
 
 -- attempt to resolve a valid itemID from a value (link, ID, or name)
----@param val string|number?
----@return integer?
 local function tryGetItemID(val)
 	if not val then
 		return nil
@@ -166,10 +187,6 @@ local function tryGetItemID(val)
 end
 
 -- ensure a string does not start with a blank space
----@param base string
----@param label string
----@param value string?
----@return string
 local function AppendField(base, label, value)
 	if not value then return base end
 	if base ~= "" then
@@ -182,8 +199,6 @@ end
 -- ensures itemCount is a valid number, rounds it to the nearest whole integer using standard rounding rules
 -- (>= 0.5 rounds up, < 0.5 rounds down), and guarantees the result is at least 1
 -- returns the rounded integer value or 1 if the input is invalid or less than 1 after rounding
----@param itemCount string|number?
----@return integer
 local function TrueRound(itemCount)
 	local n = tonumber(itemCount)
 
@@ -200,8 +215,11 @@ local function TrueRound(itemCount)
 	return rounded
 end
 
+local function GetActiveTrigger()
+	return db.trigger == "price" and L["price"] or db.trigger
+end
+
 -- events
----@type table<string, boolean?>
 local events = {
 	["CHAT_MSG_CHANNEL"] = true,
 	["CHAT_MSG_SAY"] = true,
@@ -287,8 +305,6 @@ end
 
 --[[ MAIN LOGIC]]
 -- Step 1: Listen for chat messages in the appropriate channels and check if they start with the trigger word. If not, ignore them. If they do, continue to step 2.
----@param event string
----@param ... any
 function PriceAnswer:HandleChatEvent(event, ...)
 	if (db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player"))) then
 		return
@@ -305,8 +321,9 @@ function PriceAnswer:HandleChatEvent(event, ...)
 	local msg, sender = ...
 	if not msg or not sender then return end
 
-	local trigger = strlower(db.trigger)
-	if strlower(strsub(msg, 1, #trigger)) ~= trigger then return end
+	local trigger = GetActiveTrigger()
+	local triggerLower = strlower(trigger)
+	if strlower(strsub(msg, 1, #trigger)) ~= triggerLower then return end
 
 	-- prevent message loops and duplicate processing:
 	-- 1. ignore messages that match ones recently sent by this addon (prevents responding to our own output)
@@ -329,14 +346,13 @@ end
 
 -- Step 2: Parse the message to attempt to extract an itemString and quantity,
 -- then query TSM for the relevant price sources using the itemString and build the outgoing message based on the results
----@param incomingMessage string
----@return (string firstMessage, string secondMessage)
 function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	if not ToItemString then
 		return "", ""
 	end
 	local pattern = "^(%d*)%s*(.*)$"
-	local incomingMessageTrim = strtrim(strsub(incomingMessage, #db.trigger + 1), " \r\n")
+	local trigger = GetActiveTrigger()
+	local incomingMessageTrim = strtrim(strsub(incomingMessage, #trigger + 1), " \r\n")
 	local itemCount, tail = strmatch(incomingMessageTrim, pattern)
 
 	itemCount = TrueRound(itemCount)
@@ -474,10 +490,6 @@ end
 
 -- Step 3: Pass in a table/string of price sources, the TSM itemString, and itemQuantity, and return the value of the item * quantity
 -- or 0 if no valid price is found from any of the sources
----@param sources string|string[]
----@param itemString string
----@param itemQuantity number
----@return number
 function PriceAnswer:GetPriceFromSources(sources, itemString, itemQuantity)
 	if not GetCustomPriceValue then
 		return 0
@@ -502,8 +514,6 @@ function PriceAnswer:GetPriceFromSources(sources, itemString, itemQuantity)
 end
 
 -- Step 4: Convert the price values (which are in copper) to a human readable 147g21s39c format, returning to Step 2 as a string or nil
----@param num_copper number?
----@return string?
 function PriceAnswer:ConvertToHumanReadable(num_copper)
 	local gold_string, silver_string, copper_string = "", "", ""
 	local gold, silver, copper
@@ -534,10 +544,6 @@ function PriceAnswer:ConvertToHumanReadable(num_copper)
 end
 
 -- Step 5: Send the outgoing message to the appropriate channel based on the event
----@param event string
----@param msg string
----@param target string
----@param ... any
 function PriceAnswer:SendResponse(event, msg, target, ...)
 	if (db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player"))) then
 		return
@@ -550,9 +556,7 @@ function PriceAnswer:SendResponse(event, msg, target, ...)
 
 	if event == "CHAT_MSG_BN_WHISPER" then
 		local id = select(13, ...)
-		if BNSendWhisper then
-			BNSendWhisper(id, msg)
-		end
+		SendBattleNetWhisper(id, msg)
 	else
 		if CTL then
 			CTL:SendChatMessage("NORMAL", "PATSM", msg, channel, nil, channel == "WHISPER" and target or nil)

@@ -1,34 +1,55 @@
--- Localize frequently used globals and constants for performance
-local GetAddOnMetadata, LibStub, rawget = C_AddOns.GetAddOnMetadata, LibStub, rawget
-local ipairs = ipairs
-local strlen, strtrim, ENABLE, DISABLE, JUST_OR = strlen, strtrim, ENABLE, DISABLE, JUST_OR
-local SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER = SAY, YELL, GUILD, OFFICER, PARTY, RAID, WHISPER, BN_WHISPER
-local RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL = RAID_WARNING, INSTANCE_CHAT, CLUB_FINDER_COMMUNITIES, HELP_LABEL
+-- constants
+local BN_WHISPER = BN_WHISPER
+local CLUB_FINDER_COMMUNITIES = CLUB_FINDER_COMMUNITIES
+local DISABLE = DISABLE
+local ENABLE = ENABLE
+local GLOBAL_CHANNELS = GLOBAL_CHANNELS
+local GUILD = GUILD
+local HELP_LABEL = HELP_LABEL
+local INSTANCE_CHAT = INSTANCE_CHAT
+local JUST_OR = JUST_OR
+local LibStub = LibStub
+local OFFICER = OFFICER
+local PARTY = PARTY
+local RAID = RAID
+local RAID_WARNING = RAID_WARNING
+local SAY = SAY
+local WHISPER = WHISPER
+local YELL = YELL
+
+-- flavor guards
 ---@type boolean
 ---@flavor-narrows retail
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
-local TSM_API = rawget(_G, "TSM_API")
+
+-- Lua functions
+local GetAddOnMetadata = C_AddOns.GetAddOnMetadata
+local ipairs = ipairs
+local pairs = pairs
+local strlen = strlen
+local strtrim = strtrim
+local type = type
+
+-- optional addon APIs
+local TSM_API = TSM_API
 local GetPriceSourceDescription = TSM_API and TSM_API.GetPriceSourceDescription
 
----@type PriceAnswer
-local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
+-- addon references
+local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer") --[[@as PriceAnswer]]
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version") or ""
 
----@type table?
+-- locals
 local options
 
 -- Cache TSM price source descriptions at startup
----@type string[]
 local TSMPriceSourceKeys = {
 	-- we don't need to cache every TSM price source, just the ones that are relevant to Price Answer
 	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent", "vendorsell"
 }
 -- helper function to get the description for a TSM price source
----@type table<string, string>?
 local CachedSources
 
----@return table<string, string>
 local function MapTSMKeyToDescription()
 	if CachedSources then return CachedSources end
 
@@ -49,7 +70,6 @@ local function MapTSMKeyToDescription()
 end
 
 -- returns the list of chat events monitored by the addon (built once per call, includes retail-only channels)
----@return table<string, string>
 local function GetWatchedChannelValues()
 	local channels = {
 		["CHAT_MSG_CHANNEL"] = GLOBAL_CHANNELS,
@@ -70,18 +90,28 @@ local function GetWatchedChannelValues()
 	return channels
 end
 
----@class PriceAnswerChannelOption
----@field key string
----@field name string
----@field order number
----@field values table<string, string>
----@field hidden boolean|fun(): boolean|nil
----@field disabled boolean|fun(): boolean|nil
+local function HasOtherWatchedChatChannel(db, currentKey)
+	for key in pairs(GetWatchedChannelValues()) do
+		if key ~= currentKey and db.watchedChatChannels and db.watchedChatChannels[key] then
+			return true
+		end
+	end
+	return false
+end
 
----@param db PriceAnswerDBProfile
----@return table<string, table>
+local function HasOtherTSMPriceSource(db, currentKey)
+	for _, key in ipairs(TSMPriceSourceKeys) do
+		if key ~= currentKey and db.tsmSources and db.tsmSources[key] then
+			return true
+		end
+	end
+	if isMainline and currentKey ~= "oerealm" and db.tsmSources and db.tsmSources.oerealm then
+		return true
+	end
+	return false
+end
+
 local function BuildOutgoingMessageArgs(db)
-	---@type PriceAnswerChannelOption[]
 	local channelOptions = {
 		{ key = "CHAT_MSG_GUILD", name = GUILD, order = 10, values = { WHISPER = WHISPER, GUILD = GUILD } },
 		{ key = "CHAT_MSG_OFFICER", name = OFFICER, order = 20, values = { WHISPER = WHISPER, OFFICER = OFFICER } },
@@ -117,7 +147,6 @@ local function BuildOutgoingMessageArgs(db)
 	return args
 end
 
----@return table
 function PriceAnswer:GetOptions()
 	if options then return options end -- build options table once and reuse it
 	local db = self.db.profile
@@ -183,6 +212,10 @@ function PriceAnswer:GetOptions()
 						end,
 						set = function(_, key_name, value)
 							db.watchedChatChannels = db.watchedChatChannels or {}
+							if (not value) and not HasOtherWatchedChatChannel(db, key_name) then
+								self:Print(L["You must enable at least one watched chat channel"])
+								return
+							end
 							db.watchedChatChannels[key_name] = value
 							if value then
 								self:RegisterEvent(key_name, "HandleChatEvent")
@@ -212,7 +245,9 @@ function PriceAnswer:GetOptions()
 								return false
 							end
 						end,
-						get = function() return db.trigger end,
+						get = function()
+							return db.trigger == "price" and L["price"] or db.trigger
+						end,
 						set = function(_, value)
 							db.trigger = type(value) == "string" and strtrim(value) or db.trigger
 						end
@@ -240,6 +275,11 @@ function PriceAnswer:GetOptions()
 						end,
 						set = function(_, key_name, value)
 							db.tsmSources = db.tsmSources or {}
+							if (not value) and not HasOtherTSMPriceSource(db, key_name) then
+								self:Print(L["You must enable at least one TSM price source"])
+								db.tsmSources.vendorsell = true
+								return
+							end
 							db.tsmSources[key_name] = value
 						end
 					}

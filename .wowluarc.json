@@ -3,7 +3,7 @@
   "library": ["Libs/"],
   "flavors": ["retail", "classic", "classic_era"],
   "globals": {
-    "read": ["LibStub"]
+    "read": ["LibStub", "ChatThrottleLib", "TSM_API"]
   },
   "diagnostics": {
     "enable": ["need-check-nil"]

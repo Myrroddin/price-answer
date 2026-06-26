@@ -1,8 +1,8 @@
-local debug = false
+local silent = false
 --@debug@
-debug = true
+silent = true
 --@end-debug@
-local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, debug) --[[@as table]]
+local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, silent) --[[@as table]]
 
 L["14-Day Realm Avg"] = true
 L["14-Day Region Avg"] = true
@@ -29,6 +29,7 @@ L["Incoming messages"] = true
 L["Outgoing messages"] = true
 L["Prevents the AddOn from responding to messages while you are in combat"] = true
 L["price"] = true
+L["Price Answer"] = true
 L["Price Answer has been updated. The settings have been reset to defaults."] = true
 L["Q: But I can see colours in my chat window?"] = true
 L["Q: Does the person requesting a price check need TradeSkillMaster for Price Answer to work?"] = true
@@ -45,4 +46,5 @@ L["TradeSkillMaster is required. Disabling Price Answer."] = true
 L["TSM price sources"] = true
 L["Turns 9999g into 9,999g"] = true
 L["Watched chat channels"] = true
+L["You must enable at least one TSM price source"] = true
 L["You must enable at least one watched chat channel"] = true
