@@ -6,17 +6,11 @@ local GOLD_AMOUNT_SYMBOL = GOLD_AMOUNT_SYMBOL
 local LibStub = LibStub
 local SILVER_AMOUNT_SYMBOL = SILVER_AMOUNT_SYMBOL
 
--- flavor guards
----@type boolean
 ---@flavor-narrows retail
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
----@type boolean
----@flavor-narrows classic_era
 local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
 
----@type boolean
----@flavor-narrows classic
 local isMists = WOW_PROJECT_MISTS_CLASSIC and WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
 
 -- Lua functions
@@ -61,31 +55,10 @@ if not isMainline then
 	isSeason = season and season >= 2
 end
 
--- external library object shapes used by this file
----@class PriceAnswerDBGlobal
----@field current_db_version integer?
-
----@class PriceAnswerDBProfile
----@field enableAddOn boolean
----@field formatLargeNumbers boolean
----@field disableInCombat boolean
----@field trigger string
----@field replyChannel table<string, string>
----@field tsmSources table<string, boolean>
----@field watchedChatChannels table<string, boolean>
-
----@class PriceAnswerDB: AceDBObject-3.0
----@field profile PriceAnswerDBProfile
----@field global PriceAnswerDBGlobal
----@field RegisterCallback fun(target: table, event: string, method: string)
----@field ResetDB fun(self: PriceAnswerDB, defaultProfile: string)
-
 -- addon creation
 ---@class PriceAnswer: AceAddon, AceConsole-3.0, AceEvent-3.0, LibAboutPanel-2.0
----@field db PriceAnswerDB
----@field SetEnabledState fun(self: PriceAnswer, state: boolean?)
----@field Enable fun(self: PriceAnswer)
----@field Disable fun(self: PriceAnswer)
+---@field db table
+---@field GetOptions function
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0") --[[@as PriceAnswer]]
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 

@@ -17,9 +17,6 @@ local SAY = SAY
 local WHISPER = WHISPER
 local YELL = YELL
 
--- flavor guards
----@type boolean
----@flavor-narrows retail
 local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
 -- Lua functions

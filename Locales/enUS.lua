@@ -2,7 +2,7 @@ local silent = false
 --@debug@
 silent = true
 --@end-debug@
-local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, silent) --[[@as table]]
+local L = LibStub("AceLocale-3.0"):NewLocale("PriceAnswer", "enUS", true, silent)
 
 L["14-Day Realm Avg"] = true
 L["14-Day Region Avg"] = true
