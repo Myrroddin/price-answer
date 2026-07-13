@@ -59,10 +59,9 @@ end
 ---@class PriceAnswer: AceAddon, AceConsole-3.0, AceEvent-3.0, LibAboutPanel-2.0
 ---@field db table
 ---@field GetOptions function
-local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0") --[[@as PriceAnswer]]
+local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 
--- defaults
 local defaults = {
 	profile = {
 		enableAddOn = true,
@@ -219,7 +218,7 @@ function PriceAnswer:OnInitialize()
 	end
 
 	-- set up the database and config
-	self.db = LibStub("AceDB-3.0"):New("PriceAnswerDB", defaults, true) --[[@as PriceAnswerDB]]
+	self.db = LibStub("AceDB-3.0"):New("PriceAnswerDB", defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
@@ -240,7 +239,7 @@ function PriceAnswer:OnInitialize()
 
 	self.db.global.current_db_version = CURRENT_DB_VERSION
 	db = self.db.profile
-	self:SetEnabledState(db and db.enableAddOn)
+	self:SetEnabledState(db.enableAddOn)
 
 	-- set up the options menu
 	local options = self:GetOptions()
@@ -256,7 +255,7 @@ end
 
 function PriceAnswer:OnEnable()
 	for event in pairs(events) do
-		if (events[event]) and (db and db.watchedChatChannels[event]) then
+		if (events[event]) and (db.watchedChatChannels[event]) then
 			self:RegisterEvent(event, "HandleChatEvent")
 		end
 	end
@@ -393,7 +392,7 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 		dbhistorical = self:GetPriceFromSources("dbhistorical", itemString, itemCount)
 		dbregionhistorical = self:GetPriceFromSources("dbregionhistorical", itemString, itemCount)
 	end
-	-- retail/mainline also has the "oerealm" source available, so we check that for all versions and it will return 0 if it's not available in the current version
+	-- retail/mainline also has the "oerealm" source available, so we check for non-0
 	if isMainline then
 		oerealm = self:GetPriceFromSources("oerealm", itemString, itemCount)
 		-- compare oerealm to dbmarket; if they are the same, 0 out oerealm to avoid showing duplicate price info in the output message

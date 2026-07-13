@@ -32,7 +32,7 @@ local TSM_API = TSM_API
 local GetPriceSourceDescription = TSM_API and TSM_API.GetPriceSourceDescription
 
 -- addon references
-local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer") --[[@as PriceAnswer]]
+local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version") or ""
 
@@ -44,8 +44,9 @@ local TSMPriceSourceKeys = {
 	-- we don't need to cache every TSM price source, just the ones that are relevant to Price Answer
 	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent", "vendorsell"
 }
+
 -- helper function to get the description for a TSM price source
-local CachedSources
+local CachedSources = nil
 
 local function MapTSMKeyToDescription()
 	if CachedSources then return CachedSources end
@@ -89,7 +90,7 @@ end
 
 local function HasOtherWatchedChatChannel(db, currentKey)
 	for key in pairs(GetWatchedChannelValues()) do
-		if key ~= currentKey and db.watchedChatChannels and db.watchedChatChannels[key] then
+		if key ~= currentKey and db.watchedChatChannels[key] then
 			return true
 		end
 	end
@@ -98,11 +99,11 @@ end
 
 local function HasOtherTSMPriceSource(db, currentKey)
 	for _, key in ipairs(TSMPriceSourceKeys) do
-		if key ~= currentKey and db.tsmSources and db.tsmSources[key] then
+		if key ~= currentKey and db.tsmSources[key] then
 			return true
 		end
 	end
-	if isMainline and currentKey ~= "oerealm" and db.tsmSources and db.tsmSources.oerealm then
+	if isMainline and currentKey ~= "oerealm" and db.tsmSources.oerealm then
 		return true
 	end
 	return false
@@ -130,10 +131,9 @@ local function BuildOutgoingMessageArgs(db)
 			order = opt.order,
 			values = opt.values,
 			get = function()
-				return db.replyChannel and db.replyChannel[opt.key]
+				return db.replyChannel[opt.key]
 			end,
 			set = function(_, value)
-				db.replyChannel = db.replyChannel or {}
 				db.replyChannel[opt.key] = value
 			end,
 			hidden = opt.hidden,
@@ -205,10 +205,9 @@ function PriceAnswer:GetOptions()
 						order = 10,
 						values = GetWatchedChannelValues,
 						get = function(_, key_name)
-							return db.watchedChatChannels and db.watchedChatChannels[key_name]
+							return db.watchedChatChannels[key_name]
 						end,
 						set = function(_, key_name, value)
-							db.watchedChatChannels = db.watchedChatChannels or {}
 							if (not value) and not HasOtherWatchedChatChannel(db, key_name) then
 								self:Print(L["You must enable at least one watched chat channel"])
 								return
@@ -268,10 +267,9 @@ function PriceAnswer:GetOptions()
 						order = 10,
 						values = function() return MapTSMKeyToDescription() end,
 						get = function(_, key_name)
-							return db.tsmSources and db.tsmSources[key_name]
+							return db.tsmSources[key_name]
 						end,
 						set = function(_, key_name, value)
-							db.tsmSources = db.tsmSources or {}
 							if (not value) and not HasOtherTSMPriceSource(db, key_name) then
 								self:Print(L["You must enable at least one TSM price source"])
 								db.tsmSources.vendorsell = true
