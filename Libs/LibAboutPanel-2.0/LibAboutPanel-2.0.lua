@@ -414,7 +414,6 @@ editbox:SetScript("OnTextChanged", function(self)
 	self:SetText(self:GetParent().value) -- always reset to original
 	self:HighlightText() -- auto-select text for copy
 end)
-lib.editbox = editbox
 
 local function OpenEditbox(self)
 	editbox:SetParent(self)
