@@ -22,3 +22,6 @@ Thumbs.db
 
 # Test output/logs
 *.log
+# Local validation dependencies and Python caches
+.validation/
+__pycache__/

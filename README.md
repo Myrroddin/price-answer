@@ -1,88 +1,48 @@
-# Description
+# Price Answer
 
-Automatically reply to price checks using TradeSkillMaster or external addon data.
+Automatically reply to item price checks using available pricing addons. TradeSkillMaster is optional. Players requesting prices do not need any addon.
 
-## Table of Contents
+## Supported clients
 
-- [Description](#description)
-- [Requirements](#requirements)
-- [Supported WoW versions and price sources](#supported-wow-versions-and-price-sources)
-  - [Notes](#notes)
-- [TradeSkillMaster prices](#tradeskillmaster-prices)
-- [Price sources priority](#price-sources-priority)
-  - [Auctionator and Auction House DataBase (AHDB)](#auctionator-and-auction-house-database-ahdb)
-  - [Auctioneer](#auctioneer)
-  - [Oribos Exchange](#oribos-exchange)
-- [Open the settings](#open-the-settings)
-- [Asking for a price check](#asking-for-a-price-check)
-- [Chat channels monitored](#chat-channels-monitored)
-- [Questions & answers](#questions--answers)
-- [Bugs and suggestions](#bugs-and-suggestions)
-- [Translate](#translate)
+Classic Era, active Classic seasons, Burning Crusade Classic, WoW Forever, Mists Classic, and Retail/Mainline.
 
-## Requirements
+Providers must support the client you are playing. Price Answer checks for their APIs and skips unavailable functions or data. Oribos Exchange is used only on Retail/Mainline.
 
-Price Answer requires **you** to have [TradeSkillMaster](https://support.tradeskillmaster.com/tsm-desktop-application/how-do-i-set-up-the-tsm-desktop-application) installed.
-Users requesting price checks do **not** need TSM.
+## Price priority
 
-## Supported WoW versions and price sources
+Each selected price category independently tries these providers in order:
 
-| WoW Version                | TSM Price Sources Available | External Addon Price Sources Supported |
-|----------------------------|-----------------------------|----------------------------------------|
-| Retail (Mainline)          | All TSM sources             | Auctionator, AHDB, Oribos Exchange     |
-| Mists of Pandaria Classic  | All TSM sources             | Auctionator, AHDB                      |
-| Season of Discovery        | All TSM sources             | Auctionator, Auctioneer, AHDB          |
-| Fresh/Fresh Hardcore       | All TSM sources             | Auctionator, Auctioneer, AHDB          |
-| BCC Anniversary            | All TSM sources             | Auctionator, Auctioneer, AHDB          |
-| Classic Era (vanilla)      | Limited                     | Auctionator, Auctioneer, AHDB          |
+1. TradeSkillMaster, except on Classic Era without an active season.
+2. YAAHA.
+3. Auctioneer.
+4. AuctionMaster.
+5. Auctionator.
+6. Oribos Exchange (Retail/Mainline only).
 
-### Notes
+Missing, zero, invalid, or failed price queries fall through to the next provider for that category. One reply can therefore contain prices from several providers. Classic Era without an active season skips TSM entirely. Blizzard also identifies Hardcore and Fresh realms as seasons; they receive TSM priority when the client reports an active season.
 
-- Auctioneer for TBC Anniversary requires either [Auctioneer BCC Fix](https://www.curseforge.com/wow/addons/auctioneer-bcc-fix-unofficial) or [Auctioneer Crusade](https://www.curseforge.com/wow/addons/auctioneer-crusade).
-- Auctioneer for Classic Era, Hardcore, Fresh, and Seasons requires the [original Auctioneer](https://www.curseforge.com/wow/addons/auctioneer).
-- External price sources are used when TSM price values are unavailable or zero, but TradeSkillMaster is still required.
-- External price sources are mapped to the equivalent TSM price sources where possible. Not all price sources are available for all World of Warcraft versions, regardless of additional addons.
-- Vanilla Classic Era requires an external addon to provide price data to TSM.
+Vendor sell prices use TSM where allowed, with the game's cached item information as the final fallback. Without any pricing addon, cached vendor sell prices can still be returned. Categories without data are omitted; if no selected category has data, Price Answer sends no reply.
 
-## TradeSkillMaster prices
+## Price categories
 
-- Min buyout
-- Market value (14-day realm trend)
-- Recent (market value of an item from the last data snapshot)
-- Region market average (market trend across the US or EU)
-- Historical (60-day extended market trend)
-- Region historical (60-day extended regional market trend)
-- Crafting cost (at least one of your same-realm, same-faction characters must know the recipe)
-- Destroy (DE, milling, prospecting) value
-- Vendor sell (what an NPC will give you)
+Use the **Price categories** tab to select which values to include. Existing selections are retained.
 
-## Price sources priority
+| Provider | Available price categories |
+| --- | --- |
+| TradeSkillMaster | Minimum buyout, recent, market, historical, region market, region historical, crafting, destroy, vendor sell |
+| YAAHA | Minimum bid and buyout; current, 3-, 7-, 14-, 30-, and 60-day market values; crafting cost; disenchant value; observed average sale value |
+| Auctioneer | Minimum buyout, daily average, 3- and 7-day averages through its Simple statistics module; aggregate market value through its public API |
+| AuctionMaster | Lowest buyout and market price |
+| Auctionator | Minimum buyout |
+| Oribos Exchange | Four-day realm median and regional median |
 
-1. Native TradeSkillMaster price sources (dbminbuyout, dbmarket, dbrecent, dbregionmarketavg, dbhistorical, dbregionhistorical, crafting, destroy)
-2. External addon price sources (Auctionator, Auctioneer, AHDB, Oribos Exchange)
+Provider statistics are not interchangeable. Replies name the provider and use its actual metric: for example, AuctionMaster's market price is labeled **Market Value**, rather than claiming it is a 14-day average. TSM's localized source descriptions are used when available; other labels use Price Answer's translations. YAAHA's disenchant estimate is labeled **Disenchant Value**, without implying it includes milling or prospecting.
 
-### Auctionator and Auction House DataBase (AHDB)
+The Oribos Exchange realm category can also supply the market-value fallback. If both selections resolve to that same observation, it appears only once. Auctionator does not fill market or historical categories with its minimum buyout.
 
-- Provides a minimum buyout, i.e., the least expensive single auction of an item. Mapped to TSM's minimum buyout (`dbminbuyout`).
+Amounts are multiplied by the requested quantity. Item links are preserved for providers that support equipment variants; YAAHA's public price functions accept item IDs. Availability depends on each provider's scans, downloaded data, known recipes, and supported client APIs.
 
-### Auctioneer
-
-Auctioneer is supported in Classic-era variants which retain the pre-8.3 auction house system.
-
-- Classic Era, Hardcore, Fresh, and Seasons: supported using the [original Auctioneer](https://www.curseforge.com/wow/addons/auctioneer).
-- Burning Crusade Anniversary: requires either [Auctioneer BCC Fix](https://www.curseforge.com/wow/addons/auctioneer-bcc-fix-unofficial) or [Auctioneer Crusade](https://www.curseforge.com/wow/addons/auctioneer-crusade).
-- Not supported in Mists Classic or Retail/Mainline.
-
-Provides:
-
-- A minimum buyout, i.e., the least expensive single auction of an item. Mapped to TSM's minimum buyout (`dbminbuyout`).
-- A trending market value of an item over time. Mapped to TSM's market value (`dbmarket`).
-- A recent price average of an item based on the last scan of the auction house. Mapped to TSM's recent value (`dbrecent`).
-
-### Oribos Exchange
-
-- Provides 3-day realm average price (`oerealm`).
-- Supported in Retail/Mainline only.
+Regular chat replies always use the bundled ChatThrottleLib and are divided into messages of at most 255 bytes. Battle.net whispers use the client's separate Battle.net API.
 
 ## Open the settings
 

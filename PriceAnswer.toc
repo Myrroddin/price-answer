@@ -38,7 +38,7 @@
 ## X-Wago-ID: lQNlxYNe
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 
-## OptionalDeps: ChatThrottleLib, Ace3, LibAboutPanel-2.0, Auctionator, Auc-Advanced, OribosExchange, AuctionDB, YAAHA, TradeSkillMaster
+## OptionalDeps: ChatThrottleLib, Ace3, LibAboutPanel-2.0, Auctionator, Auc-Advanced, OribosExchange, YAAHA, TradeSkillMaster, AuctionMaster
 
 ## SavedVariables: PriceAnswerDB
 
@@ -68,4 +68,5 @@ Locales\zhCN.lua
 Locales\zhTW.lua
 
 Core.lua
+Prices.lua
 Options.lua

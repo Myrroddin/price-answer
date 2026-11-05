@@ -25,3 +25,5 @@ ignore:
   - Libs/ChatThrottleLib/ChatThrottleLibStats.lua
   - Libs/ChatThrottleLib/README.txt
   - README.md
+  - tests
+  - .validation

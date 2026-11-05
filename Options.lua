@@ -1,3 +1,5 @@
+local _, addon = ...
+
 -- constants
 local BN_WHISPER = BN_WHISPER
 local CLUB_FINDER_COMMUNITIES = CLUB_FINDER_COMMUNITIES
@@ -17,54 +19,26 @@ local SAY = SAY
 local WHISPER = WHISPER
 local YELL = YELL
 
-local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+local isStandard = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
 -- Lua functions
 local GetAddOnMetadata = C_AddOns.GetAddOnMetadata
-local ipairs = ipairs
 local pairs = pairs
 local strlen = strlen
 local strtrim = strtrim
 local type = type
 
--- optional addon APIs
-local TSM_API = TSM_API
-local GetPriceSourceDescription = TSM_API and TSM_API.GetPriceSourceDescription
-
 -- addon references
-local PriceAnswer = LibStub("AceAddon-3.0"):GetAddon("PriceAnswer")
+local PriceAnswer = addon.PriceAnswer
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 local addon_version = GetAddOnMetadata("PriceAnswer", "Version") or ""
 
 -- locals
 local options
 
--- Cache TSM price source descriptions at startup
-local TSMPriceSourceKeys = {
-	-- we don't need to cache every TSM price source, just the ones that are relevant to Price Answer
-	"dbmarket", "dbminbuyout", "destroy", "dbregionmarketavg", "dbhistorical", "dbregionhistorical", "crafting", "dbrecent", "vendorsell"
-}
-
--- helper function to get the description for a TSM price source
-local CachedSources = nil
-
-local function MapTSMKeyToDescription()
-	if CachedSources then return CachedSources end
-
-	local sources = {}
-	local hasDesc = GetPriceSourceDescription
-
-	for _, key in ipairs(TSMPriceSourceKeys) do
-		sources[key] = hasDesc and (hasDesc(key) or key) or key
-	end
-
-	if isMainline then
-		local key = "oerealm"
-		sources[key] = hasDesc and (hasDesc(key) or key) or key
-	end
-
-	CachedSources = sources
-	return sources
+-- Fetch the current profile for every callback, including after profile switches.
+local function GetProfileDB()
+	return PriceAnswer.db.profile
 end
 
 -- returns the list of chat events monitored by the addon (built once per call, includes retail-only channels)
@@ -82,7 +56,7 @@ local function GetWatchedChannelValues()
 		["CHAT_MSG_RAID_WARNING"] = RAID_WARNING,
 		["CHAT_MSG_INSTANCE_CHAT"] = INSTANCE_CHAT
 	}
-	if isMainline then
+	if isStandard then
 		channels["CHAT_MSG_COMMUNITIES_CHANNEL"] = CLUB_FINDER_COMMUNITIES
 	end
 	return channels
@@ -97,19 +71,14 @@ local function HasOtherWatchedChatChannel(db, currentKey)
 	return false
 end
 
-local function HasOtherTSMPriceSource(db, currentKey)
-	for _, key in ipairs(TSMPriceSourceKeys) do
-		if key ~= currentKey and db.tsmSources[key] then
-			return true
-		end
-	end
-	if isMainline and currentKey ~= "oerealm" and db.tsmSources.oerealm then
-		return true
+local function HasOtherPriceCategory(db, currentKey)
+	for key in pairs(PriceAnswer:GetPriceCategoryLabels()) do
+		if key ~= currentKey and db.tsmSources[key] then return true end
 	end
 	return false
 end
 
-local function BuildOutgoingMessageArgs(db)
+local function BuildOutgoingMessageArgs()
 	local channelOptions = {
 		{ key = "CHAT_MSG_GUILD", name = GUILD, order = 10, values = { WHISPER = WHISPER, GUILD = GUILD } },
 		{ key = "CHAT_MSG_OFFICER", name = OFFICER, order = 20, values = { WHISPER = WHISPER, OFFICER = OFFICER } },
@@ -131,10 +100,10 @@ local function BuildOutgoingMessageArgs(db)
 			order = opt.order,
 			values = opt.values,
 			get = function()
-				return db.replyChannel[opt.key]
+				return GetProfileDB().replyChannel[opt.key]
 			end,
 			set = function(_, value)
-				db.replyChannel[opt.key] = value
+				GetProfileDB().replyChannel[opt.key] = value
 			end,
 			hidden = opt.hidden,
 			disabled = opt.disabled
@@ -146,7 +115,6 @@ end
 
 function PriceAnswer:GetOptions()
 	if options then return options end -- build options table once and reuse it
-	local db = self.db.profile
 	options = {
 		type = "group",
 		order = 10,
@@ -163,9 +131,9 @@ function PriceAnswer:GetOptions()
 				name = ENABLE .. " " .. JUST_OR .. " " .. DISABLE,
 				desc = L["Enables / disables the AddOn"],
 				type = "toggle",
-				get = function() return db.enableAddOn end,
+				get = function() return GetProfileDB().enableAddOn end,
 				set = function(_, value)
-					db.enableAddOn = value
+					GetProfileDB().enableAddOn = value
 					if value then
 						self:Enable()
 					else
@@ -178,16 +146,16 @@ function PriceAnswer:GetOptions()
 				name = L["Disable in combat"],
 				desc = L["Prevents the AddOn from responding to messages while you are in combat"],
 				type = "toggle",
-				get = function() return db.disableInCombat end,
-				set = function(_, value) db.disableInCombat = value end
+				get = function() return GetProfileDB().disableInCombat end,
+				set = function(_, value) GetProfileDB().disableInCombat = value end
 			},
 			formatLargeNumbers = {
 				order = 40,
 				name = L["Format large gold numbers"],
 				desc = L["Turns 9999g into 9,999g"],
 				type = "toggle",
-				get = function() return db.formatLargeNumbers end,
-				set = function(_, value) db.formatLargeNumbers = value end
+				get = function() return GetProfileDB().formatLargeNumbers end,
+				set = function(_, value) GetProfileDB().formatLargeNumbers = value end
 			},
 			lineBreak2 = {
 				order = 50,
@@ -205,16 +173,16 @@ function PriceAnswer:GetOptions()
 						order = 10,
 						values = GetWatchedChannelValues,
 						get = function(_, key_name)
-							return db.watchedChatChannels[key_name]
+							return GetProfileDB().watchedChatChannels[key_name]
 						end,
 						set = function(_, key_name, value)
-							if (not value) and not HasOtherWatchedChatChannel(db, key_name) then
+							if (not value) and not HasOtherWatchedChatChannel(GetProfileDB(), key_name) then
 								self:Print(L["You must enable at least one watched chat channel"])
 								return
 							end
-							db.watchedChatChannels[key_name] = value
-							if value then
-								self:RegisterEvent(key_name, "HandleChatEvent")
+							GetProfileDB().watchedChatChannels[key_name] = value
+							if value and self:IsEnabled() then
+								self:RegisterEvent(key_name, function(event, ...) self:HandleChatEvent(event, ...) end)
 							else
 								self:UnregisterEvent(key_name)
 							end
@@ -242,10 +210,10 @@ function PriceAnswer:GetOptions()
 							end
 						end,
 						get = function()
-							return db.trigger == "price" and L["price"] or db.trigger
+							return GetProfileDB().trigger == "price" and L["price"] or GetProfileDB().trigger
 						end,
 						set = function(_, value)
-							db.trigger = type(value) == "string" and strtrim(value) or db.trigger
+							GetProfileDB().trigger = type(value) == "string" and strtrim(value) or GetProfileDB().trigger
 						end
 					}
 				}
@@ -254,28 +222,28 @@ function PriceAnswer:GetOptions()
 				order = 70,
 				type = "group",
 				name = L["Outgoing messages"],
-				args = BuildOutgoingMessageArgs(db)
+				args = BuildOutgoingMessageArgs()
 			},
 			tsmOptionsTab = {
 				order = 80,
-				name = L["TSM price sources"],
+				name = L["Price categories"],
 				type = "group",
 				args = {
 					tsmSources = {
 						type = "multiselect",
 						name = L["Sources' gold values sent in the reply, if valid"],
 						order = 10,
-						values = function() return MapTSMKeyToDescription() end,
+						values = function() return self:GetPriceCategoryLabels() end,
 						get = function(_, key_name)
-							return db.tsmSources[key_name]
+							return GetProfileDB().tsmSources[key_name]
 						end,
 						set = function(_, key_name, value)
-							if (not value) and not HasOtherTSMPriceSource(db, key_name) then
-								self:Print(L["You must enable at least one TSM price source"])
-								db.tsmSources.vendorsell = true
+							if (not value) and not HasOtherPriceCategory(GetProfileDB(), key_name) then
+								self:Print(L["You must enable at least one price category"])
+								GetProfileDB().tsmSources.vendorsell = true
 								return
 							end
-							db.tsmSources[key_name] = value
+							GetProfileDB().tsmSources[key_name] = value
 						end
 					}
 				}
@@ -293,7 +261,7 @@ function PriceAnswer:GetOptions()
 					builtIntoTSMA = {
 						order = 20,
 						type = "description",
-						name = "* " .. L["A: That cannot be done without breaking TradeSkillMaster"]
+						name = "* " .. L["A: Price Answer works with several pricing addons independently"]
 					},
 					spacer1 = {
 						order = 30,
@@ -308,7 +276,7 @@ function PriceAnswer:GetOptions()
 					craftingA = {
 						order = 50,
 						type = "description",
-						name = "* " .. L["A: At least one of your same-faction, same-realm characters must know the recipe"]
+						name = "* " .. L["A: TSM or YAAHA must know a recipe and have prices for its materials"]
 					},
 					spacer2 = {
 						order = 60,
@@ -319,15 +287,15 @@ function PriceAnswer:GetOptions()
 						order = 70,
 						type = "description",
 						name = "* " .. L["Q: Where is the option to send messages to community chat?"],
-						hidden = function() return not isMainline end,
-						disabled = function() return not isMainline end
+						hidden = function() return not isStandard end,
+						disabled = function() return not isStandard end
 					},
 					communitiesA = {
 						order = 80,
 						type = "description",
 						name = "* " .. L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"],
-						hidden = function() return not isMainline end,
-						disabled = function() return not isMainline end
+						hidden = function() return not isStandard end,
+						disabled = function() return not isStandard end
 					},
 					spacer3 = {
 						order = 90,
@@ -337,12 +305,12 @@ function PriceAnswer:GetOptions()
 					senderTSMQ = {
 						order = 100,
 						type = "description",
-						name = "* " .. L["Q: Does the person requesting a price check need TradeSkillMaster for Price Answer to work?"]
+						name = "* " .. L["Q: Does the person requesting a price check need a pricing addon?"]
 					},
 					senderTSMA = {
 						order = 110,
 						type = "description",
-						name = "* " .. L["A: No, which is the point. You need TradeSkillMaster for Price Answer to work"]
+						name = "* " .. L["A: No. Only the person running Price Answer needs a supported pricing addon"]
 					},
 					spacer4 = {
 						order = 120,
@@ -382,12 +350,12 @@ function PriceAnswer:GetOptions()
 					disableTSMpricesQ = {
 						order = 190,
 						type = "description",
-						name = "* " .. L["Q: What happens if I toggle off all TradeSkillMaster prices?"]
+						name = "* " .. L["Q: What happens if a selected price category has no data?"]
 					},
 					disableTSMpricesA = {
 						order = 200,
 						type = "description",
-						name = "* " .. L["A: The AddOn will process the incoming message, and erroneously tell the sender their syntax is wrong. You should leave one or more TSM prices enabled"]
+						name = "* " .. L["A: Missing prices are omitted. If no selected category has data, no reply is sent"]
 					}
 				}
 			}

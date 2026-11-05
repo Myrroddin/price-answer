@@ -1,3 +1,5 @@
+local _, addon = ...
+
 -- constants
 local COPPER_AMOUNT_SYMBOL = COPPER_AMOUNT_SYMBOL
 local CURRENT_DB_VERSION = 2
@@ -6,12 +8,7 @@ local GOLD_AMOUNT_SYMBOL = GOLD_AMOUNT_SYMBOL
 local LibStub = LibStub
 local SILVER_AMOUNT_SYMBOL = SILVER_AMOUNT_SYMBOL
 
----@flavor-narrows retail
-local isMainline = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
-
-local isClassicEra = WOW_PROJECT_ID == WOW_PROJECT_CLASSIC
-
-local isMists = WOW_PROJECT_MISTS_CLASSIC and WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC
+local isStandard = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
 -- Lua functions
 local floor = floor
@@ -24,7 +21,6 @@ local InCombatLockdown = InCombatLockdown
 local pairs = pairs
 local pcall = pcall
 local select = select
-local SendChatMessage = C_ChatInfo.SendChatMessage
 local strlower = strlower
 local strmatch = strmatch
 local strsub = strsub
@@ -35,31 +31,15 @@ local type = type
 local UnitAffectingCombat = UnitAffectingCombat
 local wipe = wipe
 
--- optional addon APIs
+-- ChatThrottleLib is bundled and loaded before this file.
 local CTL = ChatThrottleLib
-local TSM_API = TSM_API
-local GetCustomPriceValue = TSM_API and TSM_API.GetCustomPriceValue
-local ToItemString = TSM_API and TSM_API.ToItemString
-
--- version-specific Blizzard APIs
-local SendBattleNetWhisper
-if isMainline or isMists then
-	SendBattleNetWhisper = C_BattleNet.SendWhisper
-else
-	SendBattleNetWhisper = BNSendWhisper
-end
-
-local isSeason = false
-if not isMainline then
-	local season = C_Seasons.GetActiveSeason()
-	isSeason = season and season >= 2
-end
+local SendBattleNetWhisper = C_BattleNet and C_BattleNet.SendWhisper or BNSendWhisper
 
 -- addon creation
 ---@class PriceAnswer: AceAddon, AceConsole-3.0, AceEvent-3.0, LibAboutPanel-2.0
----@field db table
----@field GetOptions function
+---@field db AceDBObject-3.0!
 local PriceAnswer = LibStub("AceAddon-3.0"):NewAddon("PriceAnswer", "AceConsole-3.0", "AceEvent-3.0", "LibAboutPanel-2.0")
+addon.PriceAnswer = PriceAnswer
 local L = LibStub("AceLocale-3.0"):GetLocale("PriceAnswer")
 
 local defaults = {
@@ -86,39 +66,6 @@ local db
 local player_name = UnitName("player")
 local PriceAnswerSentMessages = {}
 
--- price sources for normalization logic based on game version
-local minBuyoutSources = {}
-local marketValuesSources = {}
-local recentValuesSources = {}
-local regionMarketValuesSources = {}
-if isClassicEra and not isSeason then
-	minBuyoutSources = {
-		"aucminbuyout",
-		"atrvalue",
-		"ahdbminbuyout"
-	}
-else
-	minBuyoutSources = {
-		"dbminbuyout",
-		"aucminbuyout",
-		"atrvalue",
-		"ahdbminbuyout"
-	}
-end
-marketValuesSources = {
-	"dbmarket",
-	"aucmarket",
-	"oerealm"
-}
-recentValuesSources = {
-	"dbrecent",
-	"aucappraiser"
-}
-regionMarketValuesSources = {
-	"dbregionmarketavg",
-	"oeregion"
-}
-
 -- attempt to resolve a valid itemID from a value (link, ID, or name)
 local function tryGetItemID(val)
 	if not val then
@@ -137,7 +84,7 @@ local function tryGetItemID(val)
 	end
 
 	-- val may be an itemID passed in as a string or number, attempt to get a valid itemID from it
-	local itemID = tonumber(value)
+	local itemID = tonumber(value) or tonumber(strmatch(value, "^i:(%d+)$"))
 	if itemID then
 		ok, result = pcall(GetItemInfoInstant, itemID)
 		if ok and type(result) == "number" then
@@ -158,23 +105,13 @@ local function tryGetItemID(val)
 	return nil
 end
 
--- ensure a string does not start with a blank space
-local function AppendField(base, label, value)
-	if not value then return base end
-	if base ~= "" then
-		return base .. " " .. label .. " " .. value
-	else
-		return label .. " " .. value
-	end
-end
-
 -- ensures itemCount is a valid number, rounds it to the nearest whole integer using standard rounding rules
 -- (>= 0.5 rounds up, < 0.5 rounds down), and guarantees the result is at least 1
 -- returns the rounded integer value or 1 if the input is invalid or less than 1 after rounding
 local function TrueRound(itemCount)
 	local n = tonumber(itemCount)
 
-	if not n then
+	if not n or n ~= n or n == math.huge then
 		return 1
 	end
 
@@ -204,19 +141,11 @@ local events = {
 	["CHAT_MSG_BN_WHISPER"] = true,
 	["CHAT_MSG_RAID_WARNING"] = true,
 	["CHAT_MSG_INSTANCE_CHAT"] = true,
-	["CHAT_MSG_COMMUNITIES_CHANNEL"] = isMainline
+	["CHAT_MSG_COMMUNITIES_CHANNEL"] = isStandard
 }
 
 -- init
 function PriceAnswer:OnInitialize()
-	-- check for TSM_API, if it's not present then disable the addon and show an error message
-	if not TSM_API then
-		local msg = L["TradeSkillMaster is required. Disabling Price Answer."]
-		UIErrorsFrame:AddMessage(msg, 1.0, 0.1, 0.1, 5)
-		self:SetEnabledState(false)
-		return
-	end
-
 	-- set up the database and config
 	self.db = LibStub("AceDB-3.0"):New("PriceAnswerDB", defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
@@ -269,6 +198,12 @@ end
 function PriceAnswer:RefreshConfig()
 	db = self.db.profile
 	wipe(PriceAnswerSentMessages)
+	self:UnregisterAllEvents()
+	if db.enableAddOn then
+		if self:IsEnabled() then self:OnEnable() else self:Enable() end
+	else
+		self:Disable()
+	end
 end
 
 function PriceAnswer:ChatCommand()
@@ -307,192 +242,64 @@ function PriceAnswer:HandleChatEvent(event, ...)
 	local hash = msg .. "::" .. sender
 	if PriceAnswerSentMessages[hash] then return end
 
-	-- return messages from Step 2, parsed from Steps 3 and 4, to be sent in Step 5
-	local m1, m2 = self:GetOutgoingMessage(msg)
-
-	-- send the outgoing messages using Step 5, but only if they are not empty strings (if they are empty strings,
-	-- it means we failed to parse the incoming message or get valid price data from TSM, so we should not send a response)
-	if m1 ~= "" then self:SendResponse(event, m1, sender, ...) end
-	if m2 ~= "" then self:SendResponse(event, m2, sender, ...) end
+	for _, message in ipairs(self:GetOutgoingMessage(msg)) do
+		self:SendResponse(event, message, sender, ...)
+	end
+	PriceAnswerSentMessages[hash] = now
 end
 
--- Step 2: Parse the message to attempt to extract an itemString and quantity,
--- then query TSM for the relevant price sources using the itemString and build the outgoing message based on the results
+-- Resolve input without relying on TSM's item parser. Preserve full links for
+-- providers that distinguish equipment variants by level or bonus IDs.
 function PriceAnswer:GetOutgoingMessage(incomingMessage)
-	if not ToItemString then
-		return "", ""
-	end
-	local pattern = "^(%d*)%s*(.*)$"
 	local trigger = GetActiveTrigger()
-	local incomingMessageTrim = strtrim(strsub(incomingMessage, #trigger + 1), " \r\n")
-	local itemCount, tail = strmatch(incomingMessageTrim, pattern)
+	local input = strtrim(strsub(incomingMessage, #trigger + 1))
+	if input == "" then return {} end
+	local quantity, item = strmatch(input, "^(%d+)%s*(.+)$")
+	if tonumber(input) then
+		quantity, item = 1, input
+	elseif not item then
+		quantity, item = 1, input
+	end
+	quantity = TrueRound(quantity)
+	local itemID = tryGetItemID(item)
+	if not itemID or not item then return {} end
+	local _, cachedLink = GetItemInfo(item)
+	local itemLink = strmatch(item, "|Hitem:") and item or cachedLink
+	local itemString = "i:" .. tostring(itemID)
 
-	itemCount = TrueRound(itemCount)
-	tail = tail and strtrim(tail)
-
-	-- if no tail exists, the input was likely a single value (itemID),
-	-- so treat itemCount as the item and default quantity to 1
-	if (not tail) or (tail == "") then
-		tail = itemCount
-		itemCount = 1
-	end
-
-	local itemID = tryGetItemID(tail) or tryGetItemID(itemCount)
-
-	-- attempt to build a TSM itemString ("i:12345") from the tail or itemCount, prioritizing the tail
-	local itemString = nil
-	local ok, result = pcall(ToItemString, tostring(tail))
-	if (ok and result) then
-		itemString = result
-	end
-	if (not itemString) then
-		ok, result = pcall(ToItemString, tostring(itemCount))
-		if (ok and result) then
-			itemString = result
-		end
-	end
-	-- failed to get a valid TSM itemString from the tail or itemCount, attempt to build a TSM itemString from the itemID
-	if (not itemString and itemID) then
-		ok, result = pcall(ToItemString, tostring(itemID))
-		if (ok and result) then
-			itemString = result
-		else
-			itemString = "i:" .. tostring(itemID)
-		end
-	end
-
-	-- if we still don't have a valid TSM itemString at this point, exit the function with empty messages, going back to Step 1 without sending a response
-	if (not itemString) then
-		return "", ""
-	end
-
-	-- assign default price values of 0 (they are in copper amounts)
-	local dbminbuyout = 0
-	local dbmarket = 0
-	local dbrecent = 0
-	local dbhistorical = 0
-	local dbregionmarket = 0
-	local dbregionhistorical = 0
-	local oerealm = 0
-	local craftingcost = 0
-	local destroyvalue = 0
-	local vendorvalue = 0
-
-	-- Step 3: Loop through the price sources in order of priority and assign the first valid price we find to the appropriate variable.
-	-- The price sources we check depend on the game version, as some sources are not available in certain versions.
-	if (isClassicEra and not isSeason) then
-		dbminbuyout = self:GetPriceFromSources(minBuyoutSources, itemString, itemCount)
-		dbmarket = self:GetPriceFromSources("aucmarket", itemString, itemCount)
-		dbrecent = self:GetPriceFromSources("aucappraiser", itemString, itemCount)
-	else
-		dbminbuyout = self:GetPriceFromSources(minBuyoutSources, itemString, itemCount)
-		dbmarket = self:GetPriceFromSources(marketValuesSources, itemString, itemCount)
-		dbrecent = self:GetPriceFromSources(recentValuesSources, itemString, itemCount)
-		dbregionmarket = self:GetPriceFromSources(regionMarketValuesSources, itemString, itemCount)
-		dbhistorical = self:GetPriceFromSources("dbhistorical", itemString, itemCount)
-		dbregionhistorical = self:GetPriceFromSources("dbregionhistorical", itemString, itemCount)
-	end
-	-- retail/mainline also has the "oerealm" source available, so we check for non-0
-	if isMainline then
-		oerealm = self:GetPriceFromSources("oerealm", itemString, itemCount)
-		-- compare oerealm to dbmarket; if they are the same, 0 out oerealm to avoid showing duplicate price info in the output message
-		if (oerealm == dbmarket) then
-			oerealm = 0
-		end
-	end
-	-- crafting cost and destroy value are available in all versions, so we check those for all versions as well
-	craftingcost = self:GetPriceFromSources("crafting", itemString, itemCount)
-	destroyvalue = self:GetPriceFromSources("destroy", itemString, itemCount)
-	vendorvalue = self:GetPriceFromSources("vendorsell", itemString, itemCount)
-	-- Step 4: Convert the price values (which are in copper) to a human readable gold/silver/copper format and build the outgoing message string
-	-- if a price value is 0 or nil, the return will be nil instead of an empty string
-	local dbminbuyoutString = self:ConvertToHumanReadable(dbminbuyout)
-	local dbmarketString = self:ConvertToHumanReadable(dbmarket)
-	local dbrecentString = self:ConvertToHumanReadable(dbrecent)
-	local dbregionmarketString = self:ConvertToHumanReadable(dbregionmarket)
-	local dbhistoricalString = self:ConvertToHumanReadable(dbhistorical)
-	local dbregionhistoricalString = self:ConvertToHumanReadable(dbregionhistorical)
-	local oeString = isMainline and self:ConvertToHumanReadable(oerealm)
-	local craftingCostString = self:ConvertToHumanReadable(craftingcost)
-	local destroyValueString = self:ConvertToHumanReadable(destroyvalue)
-	local vendorValueString = self:ConvertToHumanReadable(vendorvalue)
-
-	local out1, out2 = "", ""
-
-	-- passed in are outN (string), localized label (string), human readable coin amount, ex: 147g21s39c (string/nil)
-	-- if the third arg passed is nil, then outN will be appended with an empty string
-	if db.tsmSources.dbminbuyout then
-		out1 = AppendField(out1, L["Cheapest Auction"], dbminbuyoutString)
-	end
-	if db.tsmSources.dbrecent then
-		out1 = AppendField(out1, L["Current AH Avg"], dbrecentString)
-	end
-	if (isMainline and oeString) then
-		if db.tsmSources.oerealm then
-			out1 = AppendField(out1, L["3-Day Realm Avg"], oeString)
-		end
-	end
-	if db.tsmSources.dbmarket then
-		out1 = AppendField(out1, L["14-Day Realm Avg"], dbmarketString)
-	end
-	if db.tsmSources.dbregionmarketavg then
-		out1 = AppendField(out1, L["14-Day Region Avg"], dbregionmarketString)
-	end
-	if db.tsmSources.dbhistorical then
-		out2 = AppendField(out2, L["60-Day Realm Avg"], dbhistoricalString)
-	end
-	if db.tsmSources.dbregionhistorical then
-		out2 = AppendField(out2, L["60-Day Region Avg"], dbregionhistoricalString)
-	end
-	if db.tsmSources.crafting then
-		out2 = AppendField(out2, L["Crafting Cost"], craftingCostString)
-	end
-	if db.tsmSources.destroy then
-		out2 = AppendField(out2, L["Disenchant/Mill/Prospect Value"], destroyValueString)
-	end
-	if db.tsmSources.vendorsell then
-		out2 = AppendField(out2, L["Sell to vendor"], vendorValueString)
-	end
-	out1 = strtrim(out1)
-	out2 = strtrim(out2)
-
-	-- return to Step 1 for sending during Step 5
-	return out1, out2
-end
-
--- Step 3: Pass in a table/string of price sources, the TSM itemString, and itemQuantity, and return the value of the item * quantity
--- or 0 if no valid price is found from any of the sources
-function PriceAnswer:GetPriceFromSources(sources, itemString, itemQuantity)
-	if not GetCustomPriceValue then
-		return 0
-	end
-	local okay, result = nil, nil
-	if type(sources) == "table" then
-		-- multiple sources passed in as a table, loop through them and attempt to get a price from each source in order of priority until we find a valid price
-		for _, source in pairs(sources) do
-			okay, result = pcall(GetCustomPriceValue, source, itemString)
-			if (okay and result) and (result > 0) then
-				return result * itemQuantity
+	local messages, message = {}, ""
+	for _, price in ipairs(self:GetPrices(itemID, itemLink, itemString)) do
+		local amount = self:ConvertToHumanReadable(floor(price.value * quantity + 0.5))
+		if amount then
+			local field = price.label .. " (" .. price.provider .. "): " .. amount
+			-- ChatThrottleLib enforces the game's 255-byte limit. Keep fields
+			-- together where possible and never cut a UTF-8 character in half.
+			if message ~= "" and #message + #field + 1 > 255 then
+				messages[#messages + 1], message = message, ""
 			end
-		end
-	else
-		-- single source passed in as a string rather than a table, attempt to get a price from that source
-		okay, result = pcall(GetCustomPriceValue, sources, itemString)
-		if (okay and result) and (result > 0) then
-			return result * itemQuantity
+			while #field > 255 do
+				local boundary = 256
+				while string.byte(field, boundary) >= 128 and string.byte(field, boundary) < 192 do
+					boundary = boundary - 1
+				end
+				messages[#messages + 1] = strsub(field, 1, boundary - 1)
+				field = strsub(field, boundary)
+			end
+			message = message == "" and field or message .. " " .. field
 		end
 	end
-	return 0
+	if message ~= "" then messages[#messages + 1] = message end
+	return messages
 end
 
--- Step 4: Convert the price values (which are in copper) to a human readable 147g21s39c format, returning to Step 2 as a string or nil
+-- Convert copper to a plain-text amount suitable for chat.
 function PriceAnswer:ConvertToHumanReadable(num_copper)
 	local gold_string, silver_string, copper_string = "", "", ""
 	local gold, silver, copper
 
-	if (num_copper and num_copper >= 1) then
+	if (num_copper and num_copper >= 1 and num_copper < math.huge) then
 		gold = floor(num_copper / 10000)
-		silver = (num_copper / 100) % 100
+		silver = floor(num_copper / 100) % 100
 		copper = num_copper % 100
 
 		if gold >= 1 then
@@ -515,7 +322,7 @@ function PriceAnswer:ConvertToHumanReadable(num_copper)
 	return nil
 end
 
--- Step 5: Send the outgoing message to the appropriate channel based on the event
+-- Send replies to the configured channel.
 function PriceAnswer:SendResponse(event, msg, target, ...)
 	if (db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player"))) then
 		return
@@ -530,10 +337,6 @@ function PriceAnswer:SendResponse(event, msg, target, ...)
 		local id = select(13, ...)
 		SendBattleNetWhisper(id, msg)
 	else
-		if CTL then
-			CTL:SendChatMessage("NORMAL", "PATSM", msg, channel, nil, channel == "WHISPER" and target or nil)
-		else
-			SendChatMessage(msg, channel, nil, channel == "WHISPER" and target or nil)
-		end
+		CTL:SendChatMessage("NORMAL", "PriceAnswer", msg, channel, nil, channel == "WHISPER" and target or nil)
 	end
 end
