@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/TradeSkillMaster/wowlua-ls/main/editors/vscode/wowluarc.schema.json",
   "library": ["Libs/"],
-  "flavors": ["retail", "classic", "classic_era"],
+  "flavors": ["retail", "classic", "classic_era", "forever"],
   "globals": {
     "read": ["LibStub", "ChatThrottleLib", "TSM_API"]
   },

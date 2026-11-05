@@ -1,4 +1,4 @@
-## Interface: 120100, 50504, 20506, 11509
+## Interface: 120105, 50504, 20506, 16001, 11509
 ## Title: Price Answer
 ## Notes: Responds to chat messages containing an item with the item's prices
 ## Notes-deDE: @localization(locale="deDE", key="Notes", namespace="ToC")@
@@ -38,9 +38,7 @@
 ## X-Wago-ID: lQNlxYNe
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 
-## RequiredDeps: TradeSkillMaster
-## OptionalDeps: LibStub, CallbackHandler-1.0, ChatThrottleLib, Ace3, LibAboutPanel-2.0, Auctionator, Auc-Advanced, OribosExchange, AuctionDB
-## Group: TradeSkillMaster
+## OptionalDeps: ChatThrottleLib, Ace3, LibAboutPanel-2.0, Auctionator, Auc-Advanced, OribosExchange, AuctionDB, YAAHA, TradeSkillMaster
 
 ## SavedVariables: PriceAnswerDB
 

@@ -5,7 +5,7 @@ This file contains the core implementation, inline localization table, and publi
 
 assert(LibStub, "LibAboutPanel-2.0 requires LibStub")
 
-local lib = LibStub:NewLibrary("LibAboutPanel-2.0", 120)
+local lib = LibStub:NewLibrary("LibAboutPanel-2.0", 121)
 if not lib then return end
 
 -- Localize frequently used Lua and WoW API functions for performance.
@@ -15,11 +15,15 @@ local GetLocale, CreateFrame = GetLocale, CreateFrame
 local GetAddOnMetadata = C_AddOns.GetAddOnMetadata -- retrieves .toc metadata like Title, Notes, Author, etc.
 
 -- Localization shim: returns the key itself if no translation exists.
+-- As in AceLocale, a translation set to true means "same as the key".
 local L = setmetatable({}, {
 	__index = function(t, k)
 		local v = tostring(k)
 		rawset(t, k, v)
 		return v
+	end,
+	__newindex = function(t, k, v)
+		rawset(t, k, v == true and tostring(k) or v)
 	end
 })
 
@@ -38,14 +42,14 @@ if locale == "deDE" then
 	L["License"] = "Lizenz"
 	L["Localizations"] = "Übersetzungen"
 	L["on the %s realm"] = "auf dem Realm %s"
-	L["Repository"] = true
+	L["Repository"] = "Repository"
 	L["Website"] = "Webseite"
 elseif locale == "esES" then
 	L["About"] = "Acerca de"
 	L["All Rights Reserved"] = "Todos los derechos reservados"
 	L["Author"] = "Autor"
 	L["Click and press Ctrl-C to copy"] = "Haz clic y pulsa Ctrl-C para copiar"
-	L["Copyright"] = true
+	L["Copyright"] = "Derechos de autor"
 	L["Credits"] = "Créditos"
 	L["Date"] = "Fecha"
 	L["Developer Build"] = "Versión de desarrollo"
@@ -75,9 +79,9 @@ elseif locale == "frFR" then
 	L["All Rights Reserved"] = "Tous droits réservés"
 	L["Author"] = "Auteur"
 	L["Click and press Ctrl-C to copy"] = "Cliquez et appuyez sur Ctrl+C pour copier"
-	L["Copyright"] = true
+	L["Copyright"] = "Droits d'auteur"
 	L["Credits"] = "Crédits"
-	L["Date"] = true
+	L["Date"] = "Date"
 	L["Developer Build"] = "Version développeur"
 	L["Email"] = "E-mail"
 	L["License"] = "Licence"
@@ -90,7 +94,7 @@ elseif locale == "itIT" then
 	L["All Rights Reserved"] = "Tutti i diritti riservati"
 	L["Author"] = "Autore"
 	L["Click and press Ctrl-C to copy"] = "Fai clic e premi Ctrl-C per copiare"
-	L["Copyright"] = true
+	L["Copyright"] = "Diritto d'autore"
 	L["Credits"] = "Crediti"
 	L["Date"] = "Data"
 	L["Developer Build"] = "Versione di sviluppo"
@@ -98,7 +102,7 @@ elseif locale == "itIT" then
 	L["License"] = "Licenza"
 	L["Localizations"] = "Localizzazioni"
 	L["on the %s realm"] = "nel reame %s"
-	L["Repository"] = true
+	L["Repository"] = "Repository"
 	L["Website"] = "Sito web"
 elseif locale == "koKR" then
 	L["About"] = "정보"
@@ -138,7 +142,7 @@ elseif locale == "ruRU" then
 	L["Copyright"] = "Авторские права"
 	L["Credits"] = "Благодарности"
 	L["Date"] = "Дата"
-	L["Developer Build"] = "Разработческая версия"
+	L["Developer Build"] = "Версия для разработчиков"
 	L["Email"] = "Эл. почта"
 	L["License"] = "Лицензия"
 	L["Localizations"] = "Локализации"
@@ -216,7 +220,6 @@ local function Trim(input)
 end
 
 -- Normalizes whitespace and removes hidden newline characters.
----@param input string?
 local function NormalizeWhitespace(input)
 	if not input then return end
 
