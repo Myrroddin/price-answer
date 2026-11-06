@@ -2,7 +2,7 @@ local _, addon = ...
 
 -- constants
 local COPPER_AMOUNT_SYMBOL = COPPER_AMOUNT_SYMBOL
-local CURRENT_DB_VERSION = 2
+local CURRENT_DB_VERSION = 3
 local DEFAULT = DEFAULT
 local GOLD_AMOUNT_SYMBOL = GOLD_AMOUNT_SYMBOL
 local LibStub = LibStub
@@ -21,7 +21,6 @@ local InCombatLockdown = InCombatLockdown
 local pairs = pairs
 local pcall = pcall
 local select = select
-local strlower = strlower
 local strmatch = strmatch
 local strsub = strsub
 local strtrim = strtrim
@@ -48,10 +47,13 @@ local defaults = {
 		formatLargeNumbers = true,
 		disableInCombat = true,
 		trigger = "price",
+		questionTrigger = true,
+		naturalQuestions = true,
+		questionLanguages = {},
 		replyChannel = {
 			["*"] = "WHISPER"
 		},
-		tsmSources = {
+		addonPriceSources = {
 			["*"] = true
 		},
 		watchedChatChannels = {
@@ -63,8 +65,34 @@ local defaults = {
 
 -- locals
 local db
-local player_name = UnitName("player")
 local PriceAnswerSentMessages = {}
+
+-- Resolve at use time: player names may not be ready while addon files load.
+-- UnitFullName's second return is a realm normally, but a surname on Forever.
+local function GetPlayerChatName()
+	local name, suffix = UnitFullName("player")
+	local regionalNames = RegionalUniqueNamesEnabled and RegionalUniqueNamesEnabled()
+	local separators = Constants and rawget(Constants, "CharacterNameSeparatorConsts")
+	local separator
+	if regionalNames then
+		separator = separators and separators.CHARACTERNAME_SURNAME_SEPARATOR or " "
+	else
+		separator = separators and separators.CHARACTERNAME_REALMNAME_SEPARATOR or "-"
+		if not suffix or suffix == "" then suffix = GetNormalizedRealmName() end
+	end
+	local fullName = name and suffix and suffix ~= "" and name .. separator .. suffix or name
+	if regionalNames and (not suffix or suffix == "") then fullName = nil end
+	return fullName, name, regionalNames
+end
+
+local function CanonicalSender(sender)
+	local fullName, shortName, regionalNames = GetPlayerChatName()
+	-- A bare first name is not enough to identify a regional-name character.
+	if fullName and (sender == fullName or (not regionalNames and sender == shortName)) then
+		return fullName
+	end
+	return sender
+end
 
 -- attempt to resolve a valid itemID from a value (link, ID, or name)
 local function tryGetItemID(val)
@@ -124,10 +152,6 @@ local function TrueRound(itemCount)
 	return rounded
 end
 
-local function GetActiveTrigger()
-	return db.trigger == "price" and L["price"] or db.trigger
-end
-
 -- events
 local events = {
 	["CHAT_MSG_CHANNEL"] = true,
@@ -147,14 +171,16 @@ local events = {
 -- init
 function PriceAnswer:OnInitialize()
 	-- set up the database and config
+	local hadSavedDatabase = type(rawget(_G, "PriceAnswerDB")) == "table"
 	self.db = LibStub("AceDB-3.0"):New("PriceAnswerDB", defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileCopied", "RefreshConfig")
 	self.db.RegisterCallback(self, "OnProfileReset", "RefreshConfig")
 
-	-- if the current_db_version is less than the CURRENT_DB_VERSION, reset the database to defaults and show a popup message to the user
+	-- AceDB creates the saved-variable table on first use. Only existing settings
+	-- need a migration reset and notice; a fresh installation already has defaults.
 	local oldVersion = self.db.global.current_db_version
-	if (not oldVersion) or (oldVersion < CURRENT_DB_VERSION) then
+	if hadSavedDatabase and ((not oldVersion) or (oldVersion < CURRENT_DB_VERSION)) then
 		StaticPopupDialogs["PRICEANSWER_RESET"] = {
 			text = L["Price Answer has been updated. The settings have been reset to defaults."],
 			button1 = ACCEPT,
@@ -174,6 +200,7 @@ function PriceAnswer:OnInitialize()
 	local options = self:GetOptions()
 	options.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(self.db)
 	options.args.aboutTable = self:AboutOptionsTable("PriceAnswer")
+	options.args.aboutTable.order = 1000
 
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("PriceAnswer", options)
 	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("PriceAnswer", L["Price Answer"])
@@ -210,8 +237,8 @@ function PriceAnswer:ChatCommand()
 	LibStub("AceConfigDialog-3.0"):Open("PriceAnswer")
 end
 
---[[ MAIN LOGIC]]
--- Step 1: Listen for chat messages in the appropriate channels and check if they start with the trigger word. If not, ignore them. If they do, continue to step 2.
+-- Recognize a request before querying providers; all request forms share the
+-- same combat, duplicate, pricing, and reply handling.
 function PriceAnswer:HandleChatEvent(event, ...)
 	if (db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player"))) then
 		return
@@ -228,21 +255,14 @@ function PriceAnswer:HandleChatEvent(event, ...)
 	local msg, sender = ...
 	if not msg or not sender then return end
 
-	local trigger = GetActiveTrigger()
-	local triggerLower = strlower(trigger)
-	if strlower(strsub(msg, 1, #trigger)) ~= triggerLower then return end
-
-	-- prevent message loops and duplicate processing:
-	-- 1. ignore messages that match ones recently sent by this addon (prevents responding to our own output)
-	-- 2. ignore messages already processed from the same sender (prevents duplicate replies and echo loops)
-	if msg and msg ~= "" then
-		local self_hash = msg .. "::" .. player_name
-		if PriceAnswerSentMessages[self_hash] then return end
-	end
-	local hash = msg .. "::" .. sender
+	-- Sent replies and incoming self-messages use the same full-name key.
+	-- Same-named players on another realm (or with another surname) stay distinct.
+	local hash = msg .. "::" .. CanonicalSender(sender)
 	if PriceAnswerSentMessages[hash] then return end
 
-	for _, message in ipairs(self:GetOutgoingMessage(msg)) do
+	local messages = self:GetOutgoingMessage(msg)
+	if #messages == 0 then return end
+	for _, message in ipairs(messages) do
 		self:SendResponse(event, message, sender, ...)
 	end
 	PriceAnswerSentMessages[hash] = now
@@ -251,15 +271,8 @@ end
 -- Resolve input without relying on TSM's item parser. Preserve full links for
 -- providers that distinguish equipment variants by level or bonus IDs.
 function PriceAnswer:GetOutgoingMessage(incomingMessage)
-	local trigger = GetActiveTrigger()
-	local input = strtrim(strsub(incomingMessage, #trigger + 1))
-	if input == "" then return {} end
-	local quantity, item = strmatch(input, "^(%d+)%s*(.+)$")
-	if tonumber(input) then
-		quantity, item = 1, input
-	elseif not item then
-		quantity, item = 1, input
-	end
+	local item, quantity = self:ParseRequest(incomingMessage)
+	if not item then return {} end
 	quantity = TrueRound(quantity)
 	local itemID = tryGetItemID(item)
 	if not itemID or not item then return {} end
@@ -271,7 +284,12 @@ function PriceAnswer:GetOutgoingMessage(incomingMessage)
 	for _, price in ipairs(self:GetPrices(itemID, itemLink, itemString)) do
 		local amount = self:ConvertToHumanReadable(floor(price.value * quantity + 0.5))
 		if amount then
-			local field = price.label .. " (" .. price.provider .. "): " .. amount
+			local field
+			if price.providerInLabel then
+				field = format(L["%s: %s"], price.label, amount)
+			else
+				field = format(L["%s (%s): %s"], price.label, price.provider, amount)
+			end
 			-- ChatThrottleLib enforces the game's 255-byte limit. Keep fields
 			-- together where possible and never cut a UTF-8 character in half.
 			if message ~= "" and #message + #field + 1 > 255 then
@@ -330,8 +348,8 @@ function PriceAnswer:SendResponse(event, msg, target, ...)
 
 	local channel = db.replyChannel[event] or "WHISPER"
 
-	local hash = msg .. "::" .. player_name
-	PriceAnswerSentMessages[hash] = GetTime()
+	local playerName = GetPlayerChatName()
+	if playerName then PriceAnswerSentMessages[msg .. "::" .. playerName] = GetTime() end
 
 	if event == "CHAT_MSG_BN_WHISPER" then
 		local id = select(13, ...)

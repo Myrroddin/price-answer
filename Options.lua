@@ -2,14 +2,15 @@ local _, addon = ...
 
 -- constants
 local BN_WHISPER = BN_WHISPER
+local CHAT_CHANNELS = CHAT_CHANNELS
 local CLUB_FINDER_COMMUNITIES = CLUB_FINDER_COMMUNITIES
-local DISABLE = DISABLE
 local ENABLE = ENABLE
+local GENERAL_LABEL = GENERAL_LABEL
 local GLOBAL_CHANNELS = GLOBAL_CHANNELS
 local GUILD = GUILD
 local HELP_LABEL = HELP_LABEL
 local INSTANCE_CHAT = INSTANCE_CHAT
-local JUST_OR = JUST_OR
+local LANGUAGES_LABEL = LANGUAGES_LABEL
 local LibStub = LibStub
 local OFFICER = OFFICER
 local PARTY = PARTY
@@ -73,7 +74,7 @@ end
 
 local function HasOtherPriceCategory(db, currentKey)
 	for key in pairs(PriceAnswer:GetPriceCategoryLabels()) do
-		if key ~= currentKey and db.tsmSources[key] then return true end
+		if key ~= currentKey and db.addonPriceSources[key] then return true end
 	end
 	return false
 end
@@ -94,6 +95,8 @@ local function BuildOutgoingMessageArgs()
 		local opt = channelOptions[i]
 		args[opt.key] = {
 			type = "select",
+			width = "relative",
+			relWidth = 0.5,
 			style = "dropdown",
 			name = opt.name,
 			desc = L["How do you want to answer this channel"],
@@ -113,92 +116,165 @@ local function BuildOutgoingMessageArgs()
 	return args
 end
 
-function PriceAnswer:GetOptions()
-	if options then return options end -- build options table once and reuse it
-	options = {
-		type = "group",
-		order = 10,
-		name = L["Price Answer"] .. " " .. addon_version,
-		childGroups = "tab",
-		args = {
-			lineBreak1 = {
-				type = "header",
-				order = 10,
-				name = "",
-			},
-			enableAddOn = {
-				order = 20,
-				name = ENABLE .. " " .. JUST_OR .. " " .. DISABLE,
-				desc = L["Enables / disables the AddOn"],
-				type = "toggle",
-				get = function() return GetProfileDB().enableAddOn end,
+local function BuildWatchedChannelArgs()
+	local keys = {
+		"CHAT_MSG_CHANNEL", "CHAT_MSG_SAY", "CHAT_MSG_YELL", "CHAT_MSG_GUILD",
+		"CHAT_MSG_OFFICER", "CHAT_MSG_PARTY", "CHAT_MSG_RAID", "CHAT_MSG_RAID_WARNING",
+		"CHAT_MSG_WHISPER", "CHAT_MSG_BN_WHISPER", "CHAT_MSG_INSTANCE_CHAT", "CHAT_MSG_COMMUNITIES_CHANNEL"
+	}
+	local names, args = GetWatchedChannelValues(), {}
+	for i, key in ipairs(keys) do
+		if names[key] then
+			args[key] = {
+				order = i, type = "toggle", name = names[key],
+				width = "relative", relWidth = 1 / 4,
+				get = function() return GetProfileDB().watchedChatChannels[key] end,
 				set = function(_, value)
-					GetProfileDB().enableAddOn = value
-					if value then
-						self:Enable()
+					if not value and not HasOtherWatchedChatChannel(GetProfileDB(), key) then
+						PriceAnswer:Print(L["You must enable at least one watched chat channel"])
+						return
+					end
+					GetProfileDB().watchedChatChannels[key] = value
+					if value and PriceAnswer:IsEnabled() then
+						PriceAnswer:RegisterEvent(key, function(event, ...) PriceAnswer:HandleChatEvent(event, ...) end)
 					else
-						self:Disable()
+						PriceAnswer:UnregisterEvent(key)
 					end
 				end
-			},
-			disableInCombat = {
-				order = 30,
-				name = L["Disable in combat"],
-				desc = L["Prevents the AddOn from responding to messages while you are in combat"],
-				type = "toggle",
-				get = function() return GetProfileDB().disableInCombat end,
-				set = function(_, value) GetProfileDB().disableInCombat = value end
-			},
-			formatLargeNumbers = {
-				order = 40,
-				name = L["Format large gold numbers"],
-				desc = L["Turns 9999g into 9,999g"],
-				type = "toggle",
-				get = function() return GetProfileDB().formatLargeNumbers end,
-				set = function(_, value) GetProfileDB().formatLargeNumbers = value end
-			},
-			lineBreak2 = {
-				order = 50,
-				type = "header",
-				name = ""
-			},
-			incomingMessagesTab = {
-				order = 60,
-				name = L["Incoming messages"],
-				type = "group",
+			}
+		end
+	end
+	return args
+end
+
+local function BuildQuestionLanguageArgs()
+	local names, keys, args = PriceAnswer:GetQuestionLanguages(), {}, {}
+	for key in pairs(names) do keys[#keys + 1] = key end
+	table.sort(keys, function(a, b)
+		if a == "enUS" then return b ~= "enUS" end
+		if b == "enUS" then return false end
+		return a < b
+	end)
+	args.description = {
+		order = 0, type = "description", width = "relative", relWidth = 1,
+		name = L["Recognize these languages independently of your game language. English and your game language are enabled by default"]
+	}
+	for i, key in ipairs(keys) do
+		args[key] = {
+			order = i, type = "toggle", name = names[key],
+			width = "relative", relWidth = 1 / 4,
+			disabled = function() return GetProfileDB().naturalQuestions == false end,
+			get = function() return PriceAnswer:IsQuestionLanguageEnabled(key) end,
+			set = function(_, value) GetProfileDB().questionLanguages[key] = value end
+		}
+	end
+	return args
+end
+
+local function BuildPriceCategoryArgs()
+	local args = {
+		description = {
+			order = 0, type = "description", width = "relative", relWidth = 1,
+			name = L["Sources' gold values sent in the reply, if valid"]
+		}
+	}
+	for i, key in ipairs(PriceAnswer:GetPriceCategoryOrder()) do
+		args[key] = {
+			order = i, type = "toggle", width = "relative", relWidth = 1 / 3,
+			name = function() return PriceAnswer:GetPriceCategoryLabels()[key] or key end,
+			hidden = function() return PriceAnswer:GetPriceCategoryLabels()[key] == nil end,
+			get = function() return GetProfileDB().addonPriceSources[key] end,
+			set = function(_, value)
+				if not value and not HasOtherPriceCategory(GetProfileDB(), key) then
+					PriceAnswer:Print(L["You must enable at least one price category"])
+					return
+				end
+				GetProfileDB().addonPriceSources[key] = value
+			end
+		}
+	end
+	return args
+end
+
+local function BuildHelpArgs()
+	local questions = {
+		{ "Q: Why isn't this addon built into TradeSkillMaster?", "A: Price Answer works with several pricing addons independently" },
+		{ "Q: The item can be crafted, but I'm not sending crafting costs?", "A: TSM or YAAHA must know a recipe and have prices for its materials" },
+		{ "Q: Where is the option to send messages to community chat?", "A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option", retail = true },
+		{ "Q: Does the person requesting a price check need a pricing addon?", "A: No. Only the person running Price Answer needs a supported pricing addon" },
+		{ "Q: Is there no option to use coins instead of g, s, c?", "A: Sending chat messages does not allow for colour codes; all coins would look the same" },
+		{ "Q: But I can see colours in my chat window?", "A: True, because adding a message to your chat window allows colours, whereas sending a chat message to someone else does not" },
+		{ "Q: What happens if a selected price category has no data?", "A: Missing prices are omitted. If no selected category has data, no reply is sent" }
+	}
+	local args = {}
+	for i, question in ipairs(questions) do
+		args["question" .. i] = {
+			order = i, type = "description", width = "relative", relWidth = 1,
+			name = L[question[1]] .. "\n" .. L[question[2]] .. "\n ",
+			hidden = function() return question.retail and not isStandard end
+		}
+	end
+	return args
+end
+
+function PriceAnswer:GetOptions()
+	if options then return options end
+	options = {
+		type = "group", name = L["Price Answer"] .. " " .. addon_version,
+		childGroups = "tab",
+		args = {
+			generalTab = {
+				order = 10, type = "group", name = GENERAL_LABEL,
 				args = {
-					watchedChatChannels = {
-						type = "multiselect",
-						name = L["Watched chat channels"],
-						order = 10,
-						values = GetWatchedChannelValues,
-						get = function(_, key_name)
-							return GetProfileDB().watchedChatChannels[key_name]
-						end,
-						set = function(_, key_name, value)
-							if (not value) and not HasOtherWatchedChatChannel(GetProfileDB(), key_name) then
-								self:Print(L["You must enable at least one watched chat channel"])
-								return
-							end
-							GetProfileDB().watchedChatChannels[key_name] = value
-							if value and self:IsEnabled() then
-								self:RegisterEvent(key_name, function(event, ...) self:HandleChatEvent(event, ...) end)
+					enableAddOn = {
+						order = 20,
+						name = ENABLE,
+						desc = L["Enables / disables the AddOn"],
+						type = "toggle",
+						width = "relative", relWidth = 1 / 3,
+						get = function() return GetProfileDB().enableAddOn end,
+						set = function(_, value)
+							GetProfileDB().enableAddOn = value
+							if value then
+								self:Enable()
 							else
-								self:UnregisterEvent(key_name)
+								self:Disable()
 							end
 						end
 					},
-					lineBreak3 = {
-						order = 20,
-						type = "header",
-						name = ""
+					disableInCombat = {
+						order = 30,
+						name = L["Disable in combat"],
+						desc = L["Prevents the AddOn from responding to messages while you are in combat"],
+						type = "toggle",
+						width = "relative", relWidth = 1 / 3,
+						get = function() return GetProfileDB().disableInCombat end,
+						set = function(_, value) GetProfileDB().disableInCombat = value end
+					},
+					formatLargeNumbers = {
+						order = 40,
+						name = L["Format large gold numbers"],
+						desc = L["Turns 9999g into 9,999g"],
+						type = "toggle",
+						width = "relative", relWidth = 1 / 3,
+						get = function() return GetProfileDB().formatLargeNumbers end,
+						set = function(_, value) GetProfileDB().formatLargeNumbers = value end
+					},
+				}
+			},
+			incomingMessagesTab = {
+				order = 20, type = "group", name = L["Incoming messages"],
+				args = {
+					watchedChatChannels = {
+						order = 10, type = "group", inline = true, name = CHAT_CHANNELS,
+						args = BuildWatchedChannelArgs()
 					},
 					trigger = {
 						type = "input",
 						name = L["The trigger"],
 						desc = L["Any symbol, word, or phrase that triggers sending price answers"],
 						order = 30,
-						width = "full",
+						width = "relative", relWidth = 1,
 						validate = function(_, value)
 							value = type(value) == "string" and strtrim(value) or ""
 							value = strlen(value) > 0 and value or nil
@@ -215,149 +291,42 @@ function PriceAnswer:GetOptions()
 						set = function(_, value)
 							GetProfileDB().trigger = type(value) == "string" and strtrim(value) or GetProfileDB().trigger
 						end
+					},
+					questionTrigger = {
+						order = 40,
+						type = "toggle",
+						width = "relative", relWidth = 0.5,
+						name = L["Allow ? requests"],
+						desc = L["Also recognize ? as a price request prefix"],
+						get = function() return GetProfileDB().questionTrigger end,
+						set = function(_, value) GetProfileDB().questionTrigger = value end
+					},
+					naturalQuestions = {
+						order = 50,
+						type = "toggle",
+						width = "relative", relWidth = 0.5,
+						name = L["Recognize price questions"],
+						desc = L["Answer recognized price questions containing exactly one item link"],
+						get = function() return GetProfileDB().naturalQuestions end,
+						set = function(_, value) GetProfileDB().naturalQuestions = value end
+					},
+					questionLanguages = {
+						order = 60, type = "group", inline = true, name = LANGUAGES_LABEL,
+						args = BuildQuestionLanguageArgs()
 					}
 				}
 			},
 			outgoingMessagesTab = {
-				order = 70,
-				type = "group",
-				name = L["Outgoing messages"],
+				order = 30, type = "group", name = L["Outgoing messages"],
 				args = BuildOutgoingMessageArgs()
 			},
-			tsmOptionsTab = {
-				order = 80,
-				name = L["Price categories"],
-				type = "group",
-				args = {
-					tsmSources = {
-						type = "multiselect",
-						name = L["Sources' gold values sent in the reply, if valid"],
-						order = 10,
-						values = function() return self:GetPriceCategoryLabels() end,
-						get = function(_, key_name)
-							return GetProfileDB().tsmSources[key_name]
-						end,
-						set = function(_, key_name, value)
-							if (not value) and not HasOtherPriceCategory(GetProfileDB(), key_name) then
-								self:Print(L["You must enable at least one price category"])
-								GetProfileDB().tsmSources.vendorsell = true
-								return
-							end
-							GetProfileDB().tsmSources[key_name] = value
-						end
-					}
-				}
+			priceOptionsTab = {
+				order = 40, type = "group", name = L["Price categories"],
+				args = BuildPriceCategoryArgs()
 			},
 			helpTab = {
-				order = 90,
-				name = HELP_LABEL,
-				type = "group",
-				args = {
-					builtIntoTSMQ = {
-						order = 10,
-						type = "description",
-						name = "* " .. L["Q: Why isn't this addon built into TradeSkillMaster?"]
-					},
-					builtIntoTSMA = {
-						order = 20,
-						type = "description",
-						name = "* " .. L["A: Price Answer works with several pricing addons independently"]
-					},
-					spacer1 = {
-						order = 30,
-						type = "description",
-						name = ""
-					},
-					craftingQ = {
-						order = 40,
-						type = "description",
-						name = "* " .. L["Q: The item can be crafted, but I'm not sending crafting costs?"]
-					},
-					craftingA = {
-						order = 50,
-						type = "description",
-						name = "* " .. L["A: TSM or YAAHA must know a recipe and have prices for its materials"]
-					},
-					spacer2 = {
-						order = 60,
-						type = "description",
-						name = ""
-					},
-					communitiesQ = {
-						order = 70,
-						type = "description",
-						name = "* " .. L["Q: Where is the option to send messages to community chat?"],
-						hidden = function() return not isStandard end,
-						disabled = function() return not isStandard end
-					},
-					communitiesA = {
-						order = 80,
-						type = "description",
-						name = "* " .. L["A: AddOns are not permitted to send messages to community channels; whispering the sender is the only option"],
-						hidden = function() return not isStandard end,
-						disabled = function() return not isStandard end
-					},
-					spacer3 = {
-						order = 90,
-						type = "description",
-						name = ""
-					},
-					senderTSMQ = {
-						order = 100,
-						type = "description",
-						name = "* " .. L["Q: Does the person requesting a price check need a pricing addon?"]
-					},
-					senderTSMA = {
-						order = 110,
-						type = "description",
-						name = "* " .. L["A: No. Only the person running Price Answer needs a supported pricing addon"]
-					},
-					spacer4 = {
-						order = 120,
-						type = "description",
-						name = ""
-					},
-					coinsQ = {
-						order = 130,
-						type = "description",
-						name = "* " .. L["Q: Is there no option to use coins instead of g, s, c?"]
-					},
-					coinsA = {
-						order = 140,
-						type = "description",
-						name = "* " .. L["A: Sending chat messages does not allow for colour codes; all coins would look the same"]
-					},
-					spacer5 = {
-						order = 150,
-						type = "description",
-						name = ""
-					},
-					coloursQ = {
-						order = 160,
-						type = "description",
-						name = "* " .. L["Q: But I can see colours in my chat window?"]
-					},
-					coloursA = {
-						order = 170,
-						type = "description",
-						name = "* " .. L["A: True, because adding a message to your chat window allows colours, whereas sending a chat message to someone else does not"]
-					},
-					spacer6 = {
-						order = 180,
-						type = "description",
-						name = ""
-					},
-					disableTSMpricesQ = {
-						order = 190,
-						type = "description",
-						name = "* " .. L["Q: What happens if a selected price category has no data?"]
-					},
-					disableTSMpricesA = {
-						order = 200,
-						type = "description",
-						name = "* " .. L["A: Missing prices are omitted. If no selected category has data, no reply is sent"]
-					}
-				}
+				order = 50, type = "group", name = HELP_LABEL,
+				args = BuildHelpArgs()
 			}
 		}
 	}
