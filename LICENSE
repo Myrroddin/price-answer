@@ -1,0 +1,45 @@
+Copyright © 2022-2026 Paul Vandersypen
+
+All Rights Reserved.
+
+PriceAnswer, including its original source code and other original contents, is
+proprietary software. Except for the limited permissions below, no permission
+is granted to copy, modify, distribute, sublicense, publish, sell, bundle, or
+create derivative works from PriceAnswer, in whole or in part, without prior written
+permission from the copyright holder.
+
+Permission is granted to download, install, use, and modify PriceAnswer for personal,
+non-commercial purposes, and to make personal backup copies. Modified copies
+and derivative works may not be shared, published, sublicensed, or distributed.
+
+Individuals may share exact, unmodified PriceAnswer release packages directly with
+others without charge, provided the complete package, including this notice and
+all third-party notices, is preserved. This permission does not authorize
+publishing or reuploading PriceAnswer to a public website, repository, package index,
+addon manager, mirror, or other distribution service.
+
+Permission is granted to an addon-hosting service, and to service providers
+acting on its behalf, to reproduce, host, cache, and distribute unmodified
+PriceAnswer release packages and their associated metadata when the copyright holder
+has done at least one of the following:
+
+- submitted or uploaded PriceAnswer to the service;
+- created or controls PriceAnswer's official project listing on the service;
+- configured release tooling to publish PriceAnswer to the service; or
+- otherwise authorized the service in writing.
+
+This permission does not extend to unauthorized mirrors, scraped or reuploaded
+copies, modified packages, third-party bundles, paywalled copies, or any other
+redistribution not authorized above. An authorized service may exercise any
+additional rights separately granted to it by the copyright holder through the
+service's applicable author agreement or terms.
+
+External libraries included with or distributed alongside PriceAnswer retain their
+respective copyrights and licenses. Those libraries are not covered by this
+notice; their respective license terms apply to them.
+
+PriceAnswer is provided "as is" and without warranty of any kind, express or implied,
+including warranties of merchantability, fitness for a particular purpose, and
+noninfringement. To the maximum extent permitted by applicable law, the
+copyright holder is not liable for any claim, damages, or other liability
+arising from the use of, or inability to use, PriceAnswer.

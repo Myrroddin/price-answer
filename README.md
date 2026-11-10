@@ -1,6 +1,6 @@
 # Price Answer
 
-Automatically reply to item price checks using available pricing addons and the game's vendor sell prices. TradeSkillMaster is optional, and no pricing addon is required to report an available vendor sell price. Players requesting prices do not need any addon.
+Automatically reply to item price checks using available pricing addons and the game's vendor sell prices. Auction addons are optional, and no pricing addon is required to report an available vendor sell price. Players requesting prices do not need any addon.
 
 ## Supported clients
 

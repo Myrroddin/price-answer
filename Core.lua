@@ -18,6 +18,7 @@ local GetItemInfo = C_Item.GetItemInfo
 local GetItemInfoInstant = C_Item.GetItemInfoInstant
 local GetTime = GetTime
 local InCombatLockdown = InCombatLockdown
+local issecretvalue = issecretvalue
 local pairs = pairs
 local pcall = pcall
 local select = select
@@ -67,10 +68,17 @@ local defaults = {
 local db
 local PriceAnswerSentMessages = {}
 
+-- Check API availability at runtime across clients. Restricted chat cannot be inspected or
+-- used as a duplicate-cache key or an outgoing whisper target by addon code.
+local function IsAccessibleValue(value)
+	return not issecretvalue or not issecretvalue(value)
+end
+
 -- Resolve at use time: player names may not be ready while addon files load.
 -- UnitFullName's second return is a realm normally, but a surname on Forever.
 local function GetPlayerChatName()
 	local name, suffix = UnitFullName("player")
+	if not IsAccessibleValue(name) or not IsAccessibleValue(suffix) then return end
 	local regionalNames = RegionalUniqueNamesEnabled and RegionalUniqueNamesEnabled()
 	local separators = Constants and rawget(Constants, "CharacterNameSeparatorConsts")
 	local separator
@@ -80,6 +88,7 @@ local function GetPlayerChatName()
 		separator = separators and separators.CHARACTERNAME_REALMNAME_SEPARATOR or "-"
 		if not suffix or suffix == "" then suffix = GetNormalizedRealmName() end
 	end
+	if not IsAccessibleValue(suffix) then return end
 	local fullName = name and suffix and suffix ~= "" and name .. separator .. suffix or name
 	if regionalNames and (not suffix or suffix == "") then fullName = nil end
 	return fullName, name, regionalNames
@@ -253,6 +262,7 @@ function PriceAnswer:HandleChatEvent(event, ...)
 	end
 
 	local msg, sender = ...
+	if not IsAccessibleValue(msg) or not IsAccessibleValue(sender) then return end
 	if not msg or not sender then return end
 
 	-- Sent replies and incoming self-messages use the same full-name key.
@@ -271,6 +281,7 @@ end
 -- Resolve input without relying on TSM's item parser. Preserve full links for
 -- providers that distinguish equipment variants by level or bonus IDs.
 function PriceAnswer:GetOutgoingMessage(incomingMessage)
+	if not IsAccessibleValue(incomingMessage) then return {} end
 	local item, quantity = self:ParseRequest(incomingMessage)
 	if not item then return {} end
 	quantity = TrueRound(quantity)
@@ -342,17 +353,22 @@ end
 
 -- Send replies to the configured channel.
 function PriceAnswer:SendResponse(event, msg, target, ...)
+	if not IsAccessibleValue(msg) or not IsAccessibleValue(target) then return end
 	if (db.disableInCombat and (InCombatLockdown() or UnitAffectingCombat("player"))) then
 		return
 	end
 
 	local channel = db.replyChannel[event] or "WHISPER"
+	local id
+	if event == "CHAT_MSG_BN_WHISPER" then
+		id = select(13, ...)
+		if not IsAccessibleValue(id) then return end
+	end
 
 	local playerName = GetPlayerChatName()
 	if playerName then PriceAnswerSentMessages[msg .. "::" .. playerName] = GetTime() end
 
 	if event == "CHAT_MSG_BN_WHISPER" then
-		local id = select(13, ...)
 		SendBattleNetWhisper(id, msg)
 	else
 		CTL:SendChatMessage("NORMAL", "PriceAnswer", msg, channel, nil, channel == "WHISPER" and target or nil)
