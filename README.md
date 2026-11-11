@@ -23,7 +23,7 @@ Missing, zero, invalid, or failed price queries fall through to the next provide
 
 Each addon is queried through its own API. External prices are not evaluated through TSM or registered as TSM price sources. Comparable prices share a category for fallback selection, but replies identify the actual provider and metric.
 
-**Vendor sell prices are independent of TSM and all other pricing addons.** The Sell Price category is available on every supported client. When it is enabled, Price Answer uses a valid TSM vendor price first where TSM pricing is allowed, then queries the game's item information directly if needed. With no pricing addons installed, it still reports the game's positive per-item vendor sell price, multiplied by the requested quantity. An uncached price or a zero sell price is omitted; the addon does not invent a price for an item that cannot be sold.
+**Vendor sell prices come exclusively from the game, independently of all pricing addons.** The Sell Price category is available on every supported client. When it is enabled, Price Answer queries the game's item information and reports its positive per-item vendor sell price once, multiplied by the requested quantity. An uncached price or a zero sell price is omitted; the addon does not invent a price for an item that cannot be sold.
 
 Categories without data are omitted; if no selected category has data, Price Answer sends no reply.
 
@@ -36,7 +36,7 @@ Use the **Price categories** tab to select which values to include. Region marke
 | Provider | Available price categories |
 | --- | --- |
 | Game client (no pricing addon required) | Vendor sell price from item information |
-| TradeSkillMaster | Minimum buyout, recent, market, historical, region market, region historical, crafting, destroy, vendor sell |
+| TradeSkillMaster | Minimum buyout, recent, market, historical, region market, region historical, crafting, destroy |
 | YAAHA | Minimum buyout; current, 3-, 7-, 14-, 30-, and 60-day market values; crafting cost; disenchanting, prospecting, and milling breakdown value |
 | Auctioneer | Minimum buyout, daily average, 3- and 7-day averages through its Simple statistics module; aggregate market value through its public API |
 | AuctionMaster | Lowest buyout and market price |

@@ -20,7 +20,7 @@ local categories = {
 	{ key = "oerealm", label = "4-Day Realm Median", oe = "market", retail = true },
 	{ key = "crafting", label = "Crafting Cost", tsm = "crafting", yaaha = "crafting" },
 	{ key = "destroy", label = "Disenchant/Mill/Prospect Value", tsm = "destroy", yaaha = "breakdown" },
-	{ key = "vendorsell", globalLabel = SELL_PRICE, tsm = "vendorsell" }
+	{ key = "vendorsell", globalLabel = SELL_PRICE }
 }
 
 local function call(func, ...)
